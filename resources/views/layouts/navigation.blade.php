@@ -9,26 +9,30 @@
     <!-- Area Links Menu (Scrollable) -->
     <div class="flex-1 overflow-y-auto flex flex-col w-full mt-6 space-y-1 px-3">
 
-        <!-- Menu Dashboard (Single) -->
+        <!-- Menu Dashboard (Selalu Tampil) -->
+        @can('menu_dashboard')
         <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-4 py-2 text-sm font-medium {{ request()->routeIs('dashboard') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }} rounded-md transition">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
             </svg>
             <span>Dashboard</span>
         </a>
+        @endcan
 
         <!-- Menu Document Control -->
+        @can('menu_documents')
         <a href="{{ route('documents.index') }}" class="flex items-center gap-3 px-4 py-2 mt-1 text-sm font-medium {{ request()->routeIs('documents.*') ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }} rounded-md transition">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
             </svg>
             <span>Document Control</span>
         </a>
+        @endcan
 
         <!-- 1. Menu Manajemen Akses -->
-        @role('superadmin')
-        <div x-data="{ open: {{ request()->routeIs('users.*', 'roles.*') ? 'true' : 'false' }} }" class="w-full">
-            <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2 mt-1 text-sm font-medium {{ request()->routeIs('users.*', 'roles.*') ? 'text-gray-900 bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }} rounded-md transition focus:outline-none">
+        @can('menu_user_management')
+        <div x-data="{ open: {{ request()->routeIs('users.*', 'roles.*', 'departments.*', 'menu-access.*') ? 'true' : 'false' }} }" class="w-full">
+            <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2 mt-1 text-sm font-medium {{ request()->routeIs('users.*', 'roles.*', 'departments.*', 'menu-access.*') ? 'text-gray-900 bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }} rounded-md transition focus:outline-none">
                 <span class="flex items-center gap-3">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -50,12 +54,24 @@
                     </svg>
                     <span>Data Role</span>
                 </a>
+                <a href="{{ route('departments.index') }}" class="flex items-center gap-3 px-4 py-2 text-sm {{ request()->routeIs('departments.*') ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100' }} rounded-md transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                    <span>Data Departemen</span>
+                </a>
+                <a href="{{ route('menu-access.index') }}" class="flex items-center gap-3 px-4 py-2 text-sm {{ request()->routeIs('menu-access.*') ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100' }} rounded-md transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    <span>Akses Menu</span>
+                </a>
             </div>
         </div>
-        @endrole
+        @endcan
 
         <!-- 1.5 Menu Master Data -->
-        @hasanyrole('superadmin|qhse')
+        @can('menu_master_data')
         <div x-data="{ open: {{ request()->routeIs('sampling-subjects.*', 'sampling-parameters.*') ? 'true' : 'false' }} }" class="w-full">
             <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2 mt-1 text-sm font-medium {{ request()->routeIs('sampling-subjects.*', 'sampling-parameters.*') ? 'text-gray-900 bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }} rounded-md transition focus:outline-none">
                 <span class="flex items-center gap-3">
@@ -81,10 +97,10 @@
                 </a>
             </div>
         </div>
-        @endhasanyrole
+        @endcan
 
-        <!-- 2. Menu Request QHSE (Termasuk pic_dept) -->
-        @hasanyrole('superadmin|qhse|pekerja|medis|ga|pic_dept')
+        <!-- 2. Menu Request QHSE -->
+        @can('menu_request_qhse')
         <div x-data="{ open: {{ request()->routeIs('fit-to-work.*', 'permit-to-work.*', 'ppe.*', 'simper.*') ? 'true' : 'false' }} }" class="w-full">
             <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2 mt-1 text-sm font-medium {{ request()->routeIs('fit-to-work.*', 'permit-to-work.*', 'ppe.*', 'simper.*') ? 'text-gray-900 bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }} rounded-md transition focus:outline-none">
                 <span class="flex items-center gap-3">
@@ -96,28 +112,24 @@
                 <svg class="w-4 h-4 transition-transform duration-200 transform shrink-0" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
             <div x-show="open" x-transition class="mt-1 space-y-1 pl-4">
-                
                 <a href="{{ route('fit-to-work.index') }}" class="flex items-center gap-3 px-4 py-2 text-sm {{ request()->routeIs('fit-to-work.*') ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100' }} rounded-md transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h4l2-7 4 14 2-7h6" />
                     </svg>
                     <span>Fit to Work</span>
                 </a>
-                
                 <a href="#" class="flex items-center gap-3 px-4 py-2 text-sm {{ request()->routeIs('permit-to-work.*') ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100' }} rounded-md transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-7.5 8.5l2 2 4-4" />
                     </svg>
                     <span>Permit to Work</span>
                 </a>
-
                 <a href="#" class="flex items-center gap-3 px-4 py-2 text-sm {{ request()->routeIs('ppe.*') ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100' }} rounded-md transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 4L5 6v13a1 1 0 001 1h3V6.5M16 4l3 2v13a1 1 0 01-1 1h-3V6.5M8 4a4 4 0 008 0M9 10h1m4 0h1m-6 4h1m4 0h1" />
                     </svg>
                     <span>PPE (Equipment)</span>
                 </a>
-
                 <a href="{{ route('simper.index') }}" class="flex items-center gap-3 px-4 py-2 text-sm {{ request()->routeIs('simper.*') ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100' }} rounded-md transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                         <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -128,12 +140,12 @@
                 </a>
             </div>
         </div>
-        @endhasanyrole
+        @endcan
 
         <!-- 3. Menu Tasklist -->
-        @hasanyrole('superadmin|qhse|pekerja|medis|ga')
-        <div x-data="{ open: {{ request()->routeIs('hazard-report.*', 'investigation.*', 'request-qhse.*') ? 'true' : 'false' }} }" class="w-full">
-            <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2 mt-1 text-sm font-medium {{ request()->routeIs('hazard-report.*', 'investigation.*', 'request-qhse.*') ? 'text-gray-900 bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }} rounded-md transition focus:outline-none">
+        @can('menu_tasklist')
+        <div x-data="{ open: {{ request()->routeIs('hazard-report.*', 'investigation.*') ? 'true' : 'false' }} }" class="w-full">
+            <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2 mt-1 text-sm font-medium {{ request()->routeIs('hazard-report.*', 'investigation.*') ? 'text-gray-900 bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }} rounded-md transition focus:outline-none">
                 <span class="flex items-center gap-3">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 4.5h6a1 1 0 011 1V6h1a2 2 0 012 2v11a2 2 0 01-2 2H7a2 2 0 01-2-2V8a2 2 0 012-2h1V5.5a1 1 0 011-1zM9 12h6M9 15.5h6M9 8.5h6" />
@@ -155,18 +167,12 @@
                     </svg>
                     <span>Investigation</span>
                 </a>
-                <a href="#" class="flex items-center gap-3 px-4 py-2 text-sm {{ request()->routeIs('request-qhse.*') ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100' }} rounded-md transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M9 4.5h6a1 1 0 011 1V6h1a2 2 0 012 2v11a2 2 0 01-2 2H7a2 2 0 01-2-2V8a2 2 0 012-2h1V5.5a1 1 0 011-1z" />
-                    </svg>
-                    <span>Request QHSE</span>
-                </a>
             </div>
         </div>
-        @endhasanyrole
+        @endcan
 
         <!-- 4. Menu Environmental Monitoring -->
-        @hasanyrole('superadmin|qhse|ga')
+        @can('menu_environmental')
         <div x-data="{ open: {{ request()->routeIs('daily-monitoring.*', 'env-sampling.*', 'waste-lb3.*', 'waste-sampah.*', 'waste-domestic.*') ? 'true' : 'false' }} }" class="w-full">
             <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2 mt-1 text-sm font-medium {{ request()->routeIs('daily-monitoring.*', 'env-sampling.*', 'waste-lb3.*', 'waste-sampah.*', 'waste-domestic.*') ? 'text-gray-900 bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }} rounded-md transition focus:outline-none">
                 <span class="flex items-center gap-3">
@@ -178,8 +184,6 @@
                 <svg class="w-4 h-4 transition-transform duration-200 transform shrink-0" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
             <div x-show="open" x-transition class="mt-1 space-y-1 pl-4">
-                
-                @hasanyrole('superadmin|qhse')
                 <a href="{{ route('daily-monitoring.index') }}" class="flex items-center gap-3 px-4 py-2 text-sm {{ request()->routeIs('daily-monitoring.*') ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100' }} rounded-md transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3.75 8.25h16.5M4.5 6h15a.75.75 0 01.75.75V19.5a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5V6.75A.75.75 0 014.5 6zM12 12.75v3l2 1.25" />
@@ -198,8 +202,6 @@
                     </svg>
                     <span>Waste Management (LB3)</span>
                 </a>
-                @endhasanyrole
-
                 <a href="{{ route('waste-domestic.index') }}" class="flex items-center gap-3 px-4 py-2 text-sm {{ request()->routeIs('waste-sampah.*', 'waste-domestic.*') ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100' }} rounded-md transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 6.75h15M9 6.75V4.5a1 1 0 011-1h4a1 1 0 011 1v2.25m4 0-.72 12.24a2 2 0 01-2 1.86H8.72a2 2 0 01-2-1.86L6 6.75M10 10.5v6M14 10.5v6" />
@@ -208,12 +210,12 @@
                 </a>
             </div>
         </div>
-        @endhasanyrole
+        @endcan
 
         <!-- 5. Menu Personal Record -->
-        @hasanyrole('superadmin|qhse|pekerja|medis|ga')
-        <div x-data="{ open: {{ request()->routeIs('my-hazard-report.*', 'my-investigation.*', 'safety-talk.*', 'training.*', 'my-simper.*') ? 'true' : 'false' }} }" class="w-full">
-            <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2 mt-1 text-sm font-medium {{ request()->routeIs('my-hazard-report.*', 'my-investigation.*', 'safety-talk.*', 'training.*', 'my-simper.*') ? 'text-gray-900 bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }} rounded-md transition focus:outline-none">
+        @can('menu_personal_record')
+        <div x-data="{ open: {{ request()->routeIs('my-hazard-report.*', 'my-investigation.*', 'safety-talk.*', 'training.*') ? 'true' : 'false' }} }" class="w-full">
+            <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2 mt-1 text-sm font-medium {{ request()->routeIs('my-hazard-report.*', 'my-investigation.*', 'safety-talk.*', 'training.*') ? 'text-gray-900 bg-gray-50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }} rounded-md transition focus:outline-none">
                 <span class="flex items-center gap-3">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.964 0a9 9 0 10-11.964 0m11.964 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -249,7 +251,7 @@
                 </a>
             </div>
         </div>
-        @endhasanyrole
+        @endcan
 
     </div>
 </nav>

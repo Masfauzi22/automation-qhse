@@ -10,7 +10,7 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     
-                    <!-- TAMPILAN PESAN ERROR (Ini yang kita butuhkan) -->
+                    <!-- TAMPILAN PESAN ERROR -->
                     @if ($errors->any())
                         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
                             <strong>Gagal Menyimpan Data!</strong>
@@ -28,7 +28,6 @@
                         <!-- Input Nama -->
                         <div class="mb-4">
                             <label class="block text-gray-700 text-sm font-bold mb-2">Nama Lengkap</label>
-                            <!-- Tambahan value="{{ old('name') }}" agar ketikan tidak hilang -->
                             <input type="text" name="name" value="{{ old('name') }}" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                         </div>
 
@@ -36,6 +35,19 @@
                         <div class="mb-4">
                             <label class="block text-gray-700 text-sm font-bold mb-2">Email Akun</label>
                             <input type="email" name="email" value="{{ old('email') }}" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+
+                        <!-- Input Departemen (Dropdown) -->
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Departemen</label>
+                            <select name="department_id" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                <option value="">-- Tidak ada spesifik / Universal --</option>
+                                @foreach($departments as $dept)
+                                    <option value="{{ $dept->id }}" {{ old('department_id') == $dept->id ? 'selected' : '' }}>
+                                        {{ $dept->name }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <!-- Input Password -->

@@ -13,6 +13,8 @@ use App\Http\Controllers\WasteDomesticController;
 use App\Http\Controllers\WasteLb3Controller;
 use App\Http\Controllers\SamplingSubjectController;
 use App\Http\Controllers\SamplingParameterController;
+use App\Http\Controllers\DepartmentController; 
+use App\Http\Controllers\MenuAccessController; // <-- TAMBAHAN IMPORT CONTROLLER
 
 
 Route::get('/', function () {
@@ -96,6 +98,13 @@ Route::middleware(['auth', 'role:superadmin'])->group(function () {
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
     Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+
+    // Manajemen Data Departemen (BARU)
+    Route::resource('departments', DepartmentController::class);
+
+    // Manajemen Akses Menu Dinamis (BARU)
+    Route::get('/menu-access', [MenuAccessController::class, 'index'])->name('menu-access.index');
+    Route::post('/menu-access', [MenuAccessController::class, 'update'])->name('menu-access.update');
 
 });
 

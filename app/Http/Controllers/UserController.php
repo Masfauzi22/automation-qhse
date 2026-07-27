@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Department; // <-- TAMBAHAN BARU
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
@@ -11,31 +12,33 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with('roles')->get(); 
+        // Panggil relasi roles dan department sekaligus
+        $users = User::with(['roles', 'department'])->get(); 
         return view('users.index', compact('users'));
     }
 
-    // Fungsi untuk menampilkan form tambah user
     public function create()
     {
         $roles = Role::all();
-        return view('users.create', compact('roles'));
+        $departments = Department::all(); // <-- Panggil data departemen untuk dropdown
+        return view('users.create', compact('roles', 'departments'));
     }
 
-    // Fungsi untuk menyimpan data user baru ke database
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
-            'role' => 'required'
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|string|email|max:255|unique:users',
+            'password'      => 'required|string|min:8',
+            'role'          => 'required',
+            'department_id' => 'nullable|exists:departments,id' // Validasi Foreign Key
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name'          => $request->name,
+            'email'         => $request->email,
+            'password'      => Hash::make($request->password),
+            'department_id' => $request->department_id,
         ]);
 
         $user->assignRole($request->role);
@@ -43,47 +46,41 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'Karyawan / User berhasil ditambahkan!');
     }
 
-    // Menampilkan form edit
     public function edit(User $user)
     {
         $roles = Role::all();
-        return view('users.edit', compact('user', 'roles'));
+        $departments = Department::all(); 
+        return view('users.edit', compact('user', 'roles', 'departments'));
     }
 
-    // Memproses perubahan data
     public function update(Request $request, User $user)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:8', 
-            'role' => 'required'
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'password'      => 'nullable|string|min:8', 
+            'role'          => 'required',
+            'department_id' => 'nullable|exists:departments,id'
         ]);
 
-        // Kumpulkan data yang pasti diubah
         $dataToUpdate = [
-            'name' => $request->name,
-            'email' => $request->email,
+            'name'          => $request->name,
+            'email'         => $request->email,
+            'department_id' => $request->department_id,
         ];
 
-        // Jika password diisi, tambahkan ke dalam array data
         if ($request->filled('password')) {
             $dataToUpdate['password'] = Hash::make($request->password);
         }
 
-        // Eksekusi update
         $user->update($dataToUpdate);
-
-        // Update role
         $user->syncRoles($request->role);
 
         return redirect()->route('users.index')->with('success', 'Data Karyawan berhasil diperbarui!');
     }
 
-    // Menghapus data user
     public function destroy(User $user)
     {
-        // Proteksi agar Superadmin utama tidak tidak sengaja terhapus
         if ($user->hasRole('superadmin')) {
             return redirect()->route('users.index')->withErrors(['Gagal! Akun Superadmin tidak boleh dihapus.']);
         }

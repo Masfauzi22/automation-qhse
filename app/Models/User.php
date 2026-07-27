@@ -9,14 +9,15 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Permission\Traits\HasRoles; // <-- Import sudah benar di sini
+use Spatie\Permission\Traits\HasRoles; 
 
-#[Fillable(['name', 'email', 'password'])]
+// UBAH: 'department' diganti menjadi 'department_id' karena sekarang menggunakan tabel relasi
+#[Fillable(['name', 'email', 'password', 'department_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRoles; // <-- HasRoles ditambahkan di dalam class ini
+    use HasFactory, Notifiable, HasRoles; 
 
     /**
      * Get the attributes that should be cast.
@@ -52,5 +53,11 @@ class User extends Authenticatable
     public function ppeRequests()
     {
         return $this->hasMany(PpeRequest::class);
+    }
+
+    // Relasi ke Tabel Departemen (BARU)
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id');
     }
 }
