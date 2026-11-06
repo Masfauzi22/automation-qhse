@@ -173,7 +173,7 @@
                         </div>
 
                         <!-- Tombol Aksi Approval untuk PIC Dept / Superadmin / QHSE -->
-                        @hasanyrole('superadmin|qhse|pic_dept')
+                        @hasanyrole('superadmin|qhse|pic dept')
                         <div x-data="{ openModal: false }">
                             <button @click="openModal = true" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 transition-all duration-200">
                                 Ubah Approval PIC

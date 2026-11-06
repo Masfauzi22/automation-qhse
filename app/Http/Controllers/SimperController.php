@@ -14,11 +14,21 @@ class SimperController extends Controller
     {
         $user = Auth::user();
         
-        // Superadmin & QHSE bisa melihat SEMUA data
+        // 1. Superadmin & QHSE bisa melihat SEMUA data
         if ($user->hasAnyRole(['superadmin', 'qhse'])) {
             $simpers = Simper::latest()->get();
         } 
-        // Jika role adalah atasan/PIC atau pekerja biasa, kita sesuaikan filter atau tampilkan miliknya
+        // 2. Jika role adalah PIC Dept (Pakai Spasi), tampilkan miliknya SENDIRI dan milik BAWAHAN (Satu Departemen)
+        elseif ($user->hasRole('pic dept')) {
+            // Mengambil teks nama dari objek relasi Department
+            $departmentName = $user->department ? $user->department->name : '';
+
+            $simpers = Simper::where('department', $departmentName)
+                             ->orWhere('user_id', $user->id)
+                             ->latest()
+                             ->get();
+        }
+        // 3. Pekerja biasa hanya melihat miliknya sendiri
         else {
             $simpers = Simper::where('user_id', $user->id)->latest()->get();
         }
@@ -64,11 +74,9 @@ class SimperController extends Controller
         $data['user_id'] = $user->id;
 
         if ($isQhse) {
-            // Jika QHSE yang buat langsung aktif dan dianggap lolos PIC
             $data['status'] = 'Active';
             $data['pic_status'] = 'Approved';
         } else {
-            // SOP Baru: Jika Pekerja yang ajukan, status PIC dan Utama adalah Pending (Menunggu Atasan)
             $data['status'] = 'Pending';
             $data['pic_status'] = 'Pending';
         }
@@ -91,7 +99,17 @@ class SimperController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user->hasAnyRole(['superadmin', 'qhse']) && $simper->user_id !== $user->id) {
+        $isQhseOrSuperadmin = $user->hasAnyRole(['superadmin', 'qhse']);
+        $isOwner = $simper->user_id === $user->id;
+        
+        // Ambil nama departemen PIC dari relasi
+        $departmentName = $user->department ? $user->department->name : '';
+        
+        // PERBAIKAN: Case-Insensitive & kebal spasi tambahan
+        $isPicOfDepartment = $user->hasRole('pic dept') && 
+                             strtolower(trim($simper->department)) === strtolower(trim($departmentName)); 
+
+        if (!$isQhseOrSuperadmin && !$isOwner && !$isPicOfDepartment) {
             abort(403, 'Akses Ditolak: Anda tidak dapat melihat data milik orang lain.');
         }
 
@@ -152,6 +170,17 @@ class SimperController extends Controller
     // 7. FUNGSI BARU: Aksi Approval oleh PIC Dept (Atasan)
     public function updatePicApproval(Request $request, Simper $simper)
     {
+        $user = Auth::user();
+        $departmentName = $user->department ? $user->department->name : '';
+
+        // PERBAIKAN: Case-Insensitive security check untuk mencegah bypass link
+        $isPicOfDepartment = $user->hasRole('pic dept') && 
+                             strtolower(trim($simper->department)) === strtolower(trim($departmentName));
+                             
+        if (!$isPicOfDepartment && !$user->hasAnyRole(['superadmin', 'qhse'])) {
+            abort(403, 'Akses Ditolak: Anda tidak berhak melakukan ACC untuk data departemen ini.');
+        }
+
         $request->validate([
             'pic_status' => 'required|in:Approved,Rejected',
             'pic_note'   => 'nullable|string',
@@ -159,7 +188,7 @@ class SimperController extends Controller
 
         $simper->update([
             'pic_status' => $request->pic_status,
-            'pic_id'     => Auth::id(), // Menyimpan siapa atasan yang meng-ACC
+            'pic_id'     => $user->id, 
             'pic_note'   => $request->pic_note,
         ]);
 

@@ -37,12 +37,11 @@
                                 <input type="text" x-model="search" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 p-2.5" placeholder="Cari nama pekerja...">
                             </div>
 
-                            @hasrole('pekerja')
+                            <!-- PERBAIKAN: Pembatasan Role Dihapus, Semua Orang Bisa Klik -->
                             <a href="{{ route('fit-to-work.create') }}" class="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition">
                                 <svg class="w-5 h-5 mr-2 -ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                                 Isi Kuesioner Baru
                             </a>
-                            @endhasrole
                         </div>
                     </div>
 

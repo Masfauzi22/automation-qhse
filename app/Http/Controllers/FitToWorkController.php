@@ -13,11 +13,11 @@ class FitToWorkController extends Controller
     {
         $user = Auth::user();
         
-        // Medis, QHSE, dan Superadmin bisa melihat semua data
+        // Medis, QHSE, dan Superadmin bisa melihat SEMUA data antrean & riwayat
         if ($user->hasAnyRole(['superadmin', 'qhse', 'medis'])) {
             $ftws = FitToWork::latest()->get();
         } 
-        // Pekerja hanya melihat pengajuannya sendiri
+        // Role lain (Pekerja Biasa, GA, PIC Dept, dll) HANYA melihat pengajuannya sendiri
         else {
             $ftws = FitToWork::where('user_id', $user->id)->latest()->get();
         }
@@ -25,13 +25,13 @@ class FitToWorkController extends Controller
         return view('fit_to_work.index', compact('ftws'));
     }
 
-    // 2. Menampilkan Form Pengajuan (Hanya untuk Pekerja)
+    // 2. Menampilkan Form Pengajuan (SEKARANG BEBAS UNTUK SEMUA ROLE)
     public function create()
     {
         return view('fit_to_work.create');
     }
 
-    // 3. Menyimpan Pengajuan Awal (Oleh Pekerja)
+    // 3. Menyimpan Pengajuan Awal (Oleh Diri Sendiri / Apapun Rolenya)
     public function store(Request $request)
     {
         $request->validate([
@@ -47,27 +47,37 @@ class FitToWorkController extends Controller
         ]);
 
         $data = $request->all();
-        $data['user_id'] = Auth::id();
-        $data['status']  = 'Pending_Medis'; // Status langsung antre ke Medis
+        $data['user_id'] = Auth::id(); // Siapapun yang login, dia yang jadi pengaju
+        $data['status']  = 'Pending_Medis'; // Status langsung masuk ke antrean Medis/Klinik
 
         FitToWork::create($data);
 
         return redirect()->route('fit-to-work.index')
-            ->with('success', 'Form Kuesioner berhasil dikirim! Silakan menuju ruang pemeriksaan medis.');
+            ->with('success', 'Form Kuesioner berhasil dikirim! Silakan menuju klinik / ruang pemeriksaan medis.');
     }
 
-    // 4. Menampilkan Halaman Detail
+    // 4. Menampilkan Halaman Detail (DIPERBAIKI: TAMBAH KEAMANAN PRIVASI MEDIS)
     public function show(FitToWork $fitToWork)
     {
+        $user = Auth::user();
+        
+        // Cek Hak Akses: Hanya Petugas (Medis/QHSE/Superadmin) ATAU si Pemilik Data yang boleh melihat.
+        // Data medis sifatnya SANGAT RAHASIA (Privasi), jadi atasan (PIC Dept) pun sebaiknya tidak bisa melihat riwayat penyakit bawahannya.
+        $isAuthorized = $user->hasAnyRole(['superadmin', 'qhse', 'medis']) || $fitToWork->user_id === $user->id;
+
+        if (!$isAuthorized) {
+            abort(403, 'Akses Ditolak: Ini adalah rekam medis rahasia. Anda tidak dapat melihat data milik orang lain.');
+        }
+
         return view('fit_to_work.show', compact('fitToWork'));
     }
 
     // 5. Menampilkan Halaman Proses/Pemeriksaan (Oleh Medis / QHSE)
     public function edit(FitToWork $fitToWork)
     {
-        // Pekerja biasa tidak boleh mengakses halaman ini
+        // Yang boleh masuk ke halaman form pemeriksaan hanya petugas berwenang
         if (!Auth::user()->hasAnyRole(['superadmin', 'qhse', 'medis'])) {
-            abort(403, 'Akses Ditolak: Hanya petugas yang berwenang.');
+            abort(403, 'Akses Ditolak: Hanya petugas medis atau tim QHSE yang berwenang.');
         }
 
         return view('fit_to_work.edit', compact('fitToWork'));
@@ -101,7 +111,7 @@ class FitToWorkController extends Controller
             ]);
 
             return redirect()->route('fit-to-work.index')
-                ->with('success', 'Pemeriksaan fisik selesai. Form diteruskan ke tim QHSE untuk validasi.');
+                ->with('success', 'Pemeriksaan fisik selesai. Form diteruskan ke tim QHSE untuk validasi akhir.');
         }
 
         // --- SKENARIO 2: YANG MEMPROSES ADALAH QHSE / SUPERADMIN ---
@@ -119,7 +129,7 @@ class FitToWorkController extends Controller
                 ->with('success', 'Validasi akhir Fit to Work berhasil disimpan!');
         }
 
-        abort(403, 'Akses Ditolak atau Status Dokumen tidak valid untuk diproses.');
+        abort(403, 'Akses Ditolak atau Status Dokumen tidak valid untuk diproses oleh Anda.');
     }
 
     // 7. Menghapus Data (Hanya Superadmin/QHSE)
@@ -130,6 +140,6 @@ class FitToWorkController extends Controller
         }
 
         $fitToWork->delete();
-        return redirect()->route('fit-to-work.index')->with('success', 'Data Fit to Work dihapus!');
+        return redirect()->route('fit-to-work.index')->with('success', 'Data Fit to Work berhasil dihapus!');
     }
 }
