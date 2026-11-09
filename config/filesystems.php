@@ -7,9 +7,8 @@ return [
     | Default Filesystem Disk
     |--------------------------------------------------------------------------
     |
-    | Here you may specify the default filesystem disk that should be used
-    | by the framework. The "local" disk, as well as a variety of cloud
-    | based disks are available to your application for file storage.
+    | Lokal  : FILESYSTEM_DISK=public  (storage/app/public + php artisan storage:link)
+    | Vercel : FILESYSTEM_DISK=s3      (Supabase Storage)
     |
     */
 
@@ -19,10 +18,6 @@ return [
     |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
-    |
-    | Below you may configure as many filesystem disks as necessary, and you
-    | may even configure multiple disks for the same driver. Examples for
-    | most supported storage drivers are configured here for reference.
     |
     | Supported drivers: "local", "ftp", "sftp", "s3"
     |
@@ -47,6 +42,7 @@ return [
             'report' => false,
         ],
 
+        // Dipakai untuk Supabase Storage (S3-compatible)
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -56,8 +52,16 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-            'throw' => false,
-            'report' => false,
+
+            // AWS SDK versi baru otomatis mengirim checksum tambahan yang kadang
+            // ditolak layanan S3-compatible. Kirim checksum hanya jika memang diwajibkan.
+            'request_checksum_calculation' => 'when_required',
+            'response_checksum_validation' => 'when_required',
+
+            // Tampilkan error asli kalau upload gagal (bukan diam-diam mengembalikan false)
+            'throw' => true,
+            // Catat error ke log (terlihat di Vercel -> Logs)
+            'report' => true,
         ],
 
     ],
@@ -66,11 +70,6 @@ return [
     |--------------------------------------------------------------------------
     | Symbolic Links
     |--------------------------------------------------------------------------
-    |
-    | Here you may configure the symbolic links that will be created when the
-    | `storage:link` Artisan command is executed. The array keys should be
-    | the locations of the links and the values should be their targets.
-    |
     */
 
     'links' => [

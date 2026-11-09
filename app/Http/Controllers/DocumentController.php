@@ -49,6 +49,10 @@ class DocumentController extends Controller
         // 2. Simpan file ke folder 'documents' di disk aktif (Supabase saat di Vercel)
         $filePath = $request->file('file')->store('documents', $this->disk());
 
+        if (! $filePath) {
+            return back()->withInput()->withErrors(['file' => 'Gagal mengunggah file ke storage. Coba lagi.']);
+        }
+
         // 3. Simpan nama dan lokasi file ke database
         Document::create([
             'document_number' => $request->document_number,
@@ -86,11 +90,17 @@ class DocumentController extends Controller
 
         // Jika user mengupload file baru untuk merevisi dokumen
         if ($request->hasFile('file')) {
-            // 1. Hapus file lama dari storage
+            // 1. Simpan file yang baru dulu (supaya file lama tidak hilang kalau upload gagal)
+            $newPath = $request->file('file')->store('documents', $this->disk());
+
+            if (! $newPath) {
+                return back()->withInput()->withErrors(['file' => 'Gagal mengunggah file ke storage. Coba lagi.']);
+            }
+
+            // 2. Baru hapus file lama dari storage
             $this->deleteFile($document->file_path);
 
-            // 2. Simpan file yang baru
-            $dataToUpdate['file_path'] = $request->file('file')->store('documents', $this->disk());
+            $dataToUpdate['file_path'] = $newPath;
         }
 
         $document->update($dataToUpdate);
