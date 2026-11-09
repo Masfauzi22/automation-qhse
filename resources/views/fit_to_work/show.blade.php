@@ -1,3 +1,41 @@
+@php
+    // Pilihan rekomendasi dokter. Class ditulis lengkap supaya terbaca oleh Tailwind.
+    $fitOptions = [
+        'Fit' => [
+            'label' => 'FIT',
+            'desc'  => 'Dapat bekerja seperti biasa',
+            'text'  => 'text-green-700',
+            'box'   => 'bg-green-50 border-green-200',
+            'icon'  => 'text-green-500',
+            'badge' => 'bg-green-100 text-green-800',
+            'path'  => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+        ],
+        'Fit_With_Note' => [
+            'label' => 'FIT WITH NOTE',
+            'desc'  => 'Dapat bekerja dengan catatan / batasan',
+            'text'  => 'text-amber-700',
+            'box'   => 'bg-amber-50 border-amber-200',
+            'icon'  => 'text-amber-500',
+            'badge' => 'bg-amber-100 text-amber-800',
+            'path'  => 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+        ],
+        'Unfit' => [
+            'label' => 'TIDAK BISA BEKERJA',
+            'desc'  => 'Tidak diizinkan bekerja',
+            'text'  => 'text-red-700',
+            'box'   => 'bg-red-50 border-red-200',
+            'icon'  => 'text-red-500',
+            'badge' => 'bg-red-100 text-red-800',
+            'path'  => 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z',
+        ],
+    ];
+
+    // Data lama (sebelum ada fit_status) dibaca dari is_recommended
+    $fitStatus = $fitToWork->fit_status
+        ?? (is_null($fitToWork->is_recommended) ? null : ($fitToWork->is_recommended ? 'Fit' : 'Unfit'));
+    $fitResult = $fitOptions[$fitStatus] ?? null;
+@endphp
+
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center">
@@ -5,15 +43,19 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
             </a>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight flex items-center">
-                {{ __('Detail Fit to Work') }} 
-                
+                {{ __('Detail Fit to Work') }}
+
                 <!-- Badge Status di Header -->
                 @if($fitToWork->status == 'Pending_Medis')
                     <span class="ml-3 px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded-full">Menunggu Medis</span>
                 @elseif($fitToWork->status == 'Pending_QHSE')
                     <span class="ml-3 px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">Menunggu Validasi QHSE</span>
                 @elseif($fitToWork->status == 'Approved')
-                    <span class="ml-3 px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">FIT (Dapat Bekerja)</span>
+                    @if($fitStatus === 'Fit_With_Note')
+                        <span class="ml-3 px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">FIT WITH NOTE (Dapat Bekerja dengan Catatan)</span>
+                    @else
+                        <span class="ml-3 px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">FIT (Dapat Bekerja)</span>
+                    @endif
                 @else
                     <span class="ml-3 px-3 py-1 bg-red-100 text-red-800 text-xs font-bold rounded-full">UNFIT (Tidak Dapat Bekerja)</span>
                 @endif
@@ -25,14 +67,14 @@
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-xl border border-gray-100">
                 <div class="p-6 md:p-8">
-                    
+
                     <!-- BAGIAN 1: IDENTITAS & KUESIONER -->
                     <div class="mb-8 pb-6 border-b border-gray-200">
                         <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
                             <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                             Data Pemohon & Kuesioner
                         </h3>
-                        
+
                         <div class="bg-gray-50 rounded-lg p-5 border border-gray-200">
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                 <div><p class="text-xs font-semibold text-gray-500 uppercase">Nama Pekerja</p><p class="text-sm font-bold text-gray-900 mt-1">{{ $fitToWork->user->name }}</p></div>
@@ -76,7 +118,7 @@
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                             Hasil Pemeriksaan Fisik (Klinik)
                         </h3>
-                        
+
                         <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 bg-indigo-50 p-5 rounded-lg border border-indigo-100 mb-4">
                             <div><p class="text-xs text-indigo-500 uppercase">Tensi</p><p class="font-bold text-indigo-900">{{ $fitToWork->blood_pressure }} mmHg</p></div>
                             <div><p class="text-xs text-indigo-500 uppercase">Suhu</p><p class="font-bold text-indigo-900">{{ $fitToWork->body_temp }} °C</p></div>
@@ -85,22 +127,25 @@
                             <div><p class="text-xs text-indigo-500 uppercase">Nafas</p><p class="font-bold text-indigo-900">{{ $fitToWork->respiration_rate }} x/m</p></div>
                         </div>
 
-                        <div class="p-4 rounded-lg flex items-center {{ $fitToWork->is_recommended ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200' }}">
-                            <div class="mr-3">
-                                @if($fitToWork->is_recommended)
-                                    <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                @else
-                                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                @endif
+                        @if($fitResult)
+                        <div class="rounded-lg border p-4 {{ $fitResult['box'] }}">
+                            <div class="flex items-center">
+                                <svg class="mr-3 h-8 w-8 shrink-0 {{ $fitResult['icon'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $fitResult['path'] }}"></path></svg>
+                                <div>
+                                    <p class="text-xs font-bold text-gray-500 uppercase">Rekomendasi Dokter:</p>
+                                    <p class="text-lg font-bold {{ $fitResult['text'] }}">{{ $fitResult['label'] }}</p>
+                                    <p class="text-xs text-gray-500 mt-1">Diperiksa oleh: <strong>{{ $fitToWork->medical->name ?? 'Tim Medis' }}</strong> pada {{ $fitToWork->updated_at->format('d M Y - H:i') }}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p class="text-xs font-bold text-gray-500 uppercase">Rekomendasi Tim Medis:</p>
-                                <p class="text-lg font-bold {{ $fitToWork->is_recommended ? 'text-green-700' : 'text-red-700' }}">
-                                    {{ $fitToWork->is_recommended ? 'DAPAT BEKERJA (FIT)' : 'TIDAK DAPAT BEKERJA (UNFIT)' }}
-                                </p>
-                                <p class="text-xs text-gray-500 mt-1">Diperiksa oleh: <strong>{{ $fitToWork->medical->name }}</strong> pada {{ $fitToWork->updated_at->format('d M Y - H:i') }}</p>
-                            </div>
+
+                            @if($fitToWork->medical_notes)
+                                <div class="mt-3 rounded-md bg-white/70 p-3 text-sm text-gray-700">
+                                    <p class="text-xs font-bold text-gray-500 uppercase mb-1">Catatan Dokter:</p>
+                                    <p class="whitespace-pre-line">{{ $fitToWork->medical_notes }}</p>
+                                </div>
+                            @endif
                         </div>
+                        @endif
                     </div>
                     @endif
 
@@ -111,18 +156,21 @@
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                             Keputusan Akhir QHSE
                         </h3>
-                        
+
                         <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 flex items-center justify-between">
                             <div>
                                 <p class="text-sm text-blue-800 font-medium">Status Izin Kerja:</p>
                                 @if($fitToWork->status == 'Approved')
                                     <p class="text-2xl font-black text-green-600 uppercase mt-1">DIIZINKAN (APPROVED)</p>
+                                    @if($fitStatus === 'Fit_With_Note')
+                                        <p class="text-sm font-semibold text-amber-700 mt-1">Bekerja dengan memperhatikan catatan dokter di atas.</p>
+                                    @endif
                                 @else
                                     <p class="text-2xl font-black text-red-600 uppercase mt-1">DITOLAK (REJECTED)</p>
                                 @endif
-                                <p class="text-xs text-blue-600 mt-2">Divalidasi oleh: <strong>{{ $fitToWork->qhse->name }}</strong></p>
+                                <p class="text-xs text-blue-600 mt-2">Divalidasi oleh: <strong>{{ $fitToWork->qhse->name ?? 'Tim QHSE' }}</strong></p>
                             </div>
-                            
+
                             <!-- Stempel Visual -->
                             <div class="hidden sm:block opacity-20 transform -rotate-12">
                                 @if($fitToWork->status == 'Approved')
@@ -134,9 +182,9 @@
                         </div>
                     </div>
                     @endif
-                    
+
                 </div>
-                
+
                 <div class="px-8 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end rounded-b-xl">
                     <a href="{{ route('fit-to-work.index') }}" class="px-6 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-100 transition shadow-sm">
                         Kembali ke Daftar

@@ -1,3 +1,44 @@
+@php
+    // Pilihan rekomendasi dokter. Class ditulis lengkap supaya terbaca oleh Tailwind.
+    $fitOptions = [
+        'Fit' => [
+            'label' => 'FIT',
+            'desc'  => 'Dapat bekerja seperti biasa',
+            'card'  => 'hover:border-green-300 has-[:checked]:border-green-500 has-[:checked]:bg-green-50',
+            'text'  => 'text-green-700',
+            'radio' => 'text-green-600 focus:ring-green-500',
+            'box'   => 'bg-green-100 border-green-200',
+            'icon'  => 'text-green-600',
+            'path'  => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+        ],
+        'Fit_With_Note' => [
+            'label' => 'FIT WITH NOTE',
+            'desc'  => 'Dapat bekerja dengan catatan / batasan',
+            'card'  => 'hover:border-amber-300 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50',
+            'text'  => 'text-amber-700',
+            'radio' => 'text-amber-500 focus:ring-amber-500',
+            'box'   => 'bg-amber-100 border-amber-200',
+            'icon'  => 'text-amber-600',
+            'path'  => 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+        ],
+        'Unfit' => [
+            'label' => 'TIDAK BISA BEKERJA',
+            'desc'  => 'Tidak diizinkan bekerja',
+            'card'  => 'hover:border-red-300 has-[:checked]:border-red-500 has-[:checked]:bg-red-50',
+            'text'  => 'text-red-700',
+            'radio' => 'text-red-600 focus:ring-red-500',
+            'box'   => 'bg-red-100 border-red-200',
+            'icon'  => 'text-red-600',
+            'path'  => 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z',
+        ],
+    ];
+
+    // Data lama (sebelum ada fit_status) dibaca dari is_recommended
+    $fitStatus = $fitToWork->fit_status
+        ?? (is_null($fitToWork->is_recommended) ? null : ($fitToWork->is_recommended ? 'Fit' : 'Unfit'));
+    $fitResult = $fitOptions[$fitStatus] ?? null;
+@endphp
+
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center">
@@ -17,11 +58,11 @@
     <div class="py-12">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-xl border border-gray-100">
-                
+
                 <form action="{{ route('fit-to-work.update', $fitToWork->id) }}" method="POST">
                     @csrf
                     @method('PUT')
-                    
+
                     <div class="p-6 md:p-8">
                         <!-- BAGIAN 1: IDENTITAS & KUESIONER (READ-ONLY UNTUK MEDIS & QHSE) -->
                         <div class="mb-8 pb-6 border-b border-gray-200">
@@ -29,7 +70,7 @@
                                 <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                 Data Pemohon (Diisi oleh Pekerja)
                             </h3>
-                            
+
                             <div class="bg-gray-50 rounded-lg p-5 border border-gray-200">
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                                     <div>
@@ -52,7 +93,7 @@
 
                                 <div class="space-y-2">
                                     <p class="text-xs font-bold text-gray-900 uppercase border-b border-gray-200 pb-2 mb-3">Hasil Kuesioner:</p>
-                                    
+
                                     @php
                                         $q_answers = [
                                             '1. Kondisi saat ini FIT?' => $fitToWork->q1_is_fit,
@@ -86,43 +127,66 @@
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                                 Pemeriksaan Fisik (Klinik)
                             </h3>
-                            
+
                             @if(Auth::user()->hasRole('medis') && $fitToWork->status == 'Pending_Medis')
                                 <!-- Form Input Untuk Dokter -->
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 bg-indigo-50 p-6 rounded-lg border border-indigo-100">
                                     <div>
                                         <label class="block text-sm font-bold text-gray-700 mb-1">Tekanan Darah (mmHg) <span class="text-red-500">*</span></label>
                                         <input type="text" name="blood_pressure" value="{{ old('blood_pressure') }}" required class="shadow-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md w-full" placeholder="cth: 120/80">
+                                        @error('blood_pressure') <span class="text-sm text-red-600 mt-1 block">{{ $message }}</span> @enderror
                                     </div>
                                     <div>
                                         <label class="block text-sm font-bold text-gray-700 mb-1">Suhu Tubuh (°C) <span class="text-red-500">*</span></label>
                                         <input type="text" name="body_temp" value="{{ old('body_temp') }}" required class="shadow-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md w-full" placeholder="cth: 36.5">
+                                        @error('body_temp') <span class="text-sm text-red-600 mt-1 block">{{ $message }}</span> @enderror
                                     </div>
                                     <div>
                                         <label class="block text-sm font-bold text-gray-700 mb-1">SpO2 (%) <span class="text-red-500">*</span></label>
                                         <input type="text" name="spo2" value="{{ old('spo2') }}" required class="shadow-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md w-full" placeholder="cth: 98">
+                                        @error('spo2') <span class="text-sm text-red-600 mt-1 block">{{ $message }}</span> @enderror
                                     </div>
                                     <div>
                                         <label class="block text-sm font-bold text-gray-700 mb-1">Denyut Nadi (x/menit) <span class="text-red-500">*</span></label>
                                         <input type="text" name="heart_rate" value="{{ old('heart_rate') }}" required class="shadow-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md w-full" placeholder="cth: 80">
+                                        @error('heart_rate') <span class="text-sm text-red-600 mt-1 block">{{ $message }}</span> @enderror
                                     </div>
                                     <div>
                                         <label class="block text-sm font-bold text-gray-700 mb-1">Pernafasan (x/menit) <span class="text-red-500">*</span></label>
                                         <input type="text" name="respiration_rate" value="{{ old('respiration_rate') }}" required class="shadow-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md w-full" placeholder="cth: 18">
+                                        @error('respiration_rate') <span class="text-sm text-red-600 mt-1 block">{{ $message }}</span> @enderror
                                     </div>
                                 </div>
-                                
+
+                                <!-- Rekomendasi Dokter: 3 opsi -->
                                 <div class="mt-6 border-t border-gray-200 pt-5">
-                                    <label class="block text-sm font-bold text-gray-900 mb-3">Rekomendasi Medis: <span class="text-red-500">*</span></label>
-                                    <div class="flex space-x-6">
-                                        <label class="inline-flex items-center cursor-pointer bg-white border border-gray-200 p-3 rounded-lg hover:bg-green-50 w-full justify-center">
-                                            <input type="radio" name="is_recommended" value="1" class="form-radio text-green-600 h-5 w-5" required>
-                                            <span class="ml-2 text-sm font-bold text-green-700">DAPAT BEKERJA</span>
+                                    <label class="block text-sm font-bold text-gray-900 mb-3">Rekomendasi Dokter: <span class="text-red-500">*</span></label>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        @foreach($fitOptions as $value => $opt)
+                                            <label class="flex cursor-pointer items-start gap-3 rounded-lg border-2 border-gray-200 bg-white p-4 transition {{ $opt['card'] }}">
+                                                <input type="radio" name="fit_status" value="{{ $value }}" required
+                                                       class="form-radio mt-0.5 h-5 w-5 {{ $opt['radio'] }}"
+                                                       @checked(old('fit_status') === $value)>
+                                                <span>
+                                                    <span class="block text-sm font-bold {{ $opt['text'] }}">{{ $opt['label'] }}</span>
+                                                    <span class="mt-0.5 block text-xs text-gray-500">{{ $opt['desc'] }}</span>
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                    @error('fit_status') <span class="text-sm text-red-600 mt-2 block">{{ $message }}</span> @enderror
+
+                                    <!-- Catatan Dokter (opsional) -->
+                                    <div class="mt-5">
+                                        <label for="medical_notes" class="block text-sm font-bold text-gray-900 mb-1">
+                                            Catatan Dokter <span class="font-normal text-gray-400">(opsional)</span>
                                         </label>
-                                        <label class="inline-flex items-center cursor-pointer bg-white border border-gray-200 p-3 rounded-lg hover:bg-red-50 w-full justify-center">
-                                            <input type="radio" name="is_recommended" value="0" class="form-radio text-red-600 h-5 w-5" required>
-                                            <span class="ml-2 text-sm font-bold text-red-700">TIDAK DAPAT BEKERJA</span>
-                                        </label>
+                                        <textarea id="medical_notes" name="medical_notes" rows="3" maxlength="1000"
+                                                  class="shadow-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md w-full"
+                                                  placeholder="cth: Tidak disarankan bekerja di ketinggian; kontrol ulang tekanan darah besok pagi.">{{ old('medical_notes') }}</textarea>
+                                        <p class="text-xs text-gray-500 mt-1">Isi batasan kerja, saran, atau alasan jika pekerja tidak bisa bekerja.</p>
+                                        @error('medical_notes') <span class="text-sm text-red-600 mt-1 block">{{ $message }}</span> @enderror
                                     </div>
                                 </div>
                             @else
@@ -134,23 +198,26 @@
                                     <div><p class="text-xs text-gray-500">Nadi</p><p class="font-bold">{{ $fitToWork->heart_rate }} x/m</p></div>
                                     <div><p class="text-xs text-gray-500">Nafas</p><p class="font-bold">{{ $fitToWork->respiration_rate }} x/m</p></div>
                                 </div>
-                                
-                                <div class="mt-4 p-4 rounded-lg flex items-center {{ $fitToWork->is_recommended ? 'bg-green-100 border border-green-200' : 'bg-red-100 border border-red-200' }}">
-                                    <div class="mr-3">
-                                        @if($fitToWork->is_recommended)
-                                            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        @else
-                                            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+
+                                @if($fitResult)
+                                    <div class="mt-4 rounded-lg border p-4 {{ $fitResult['box'] }}">
+                                        <div class="flex items-center">
+                                            <svg class="mr-3 h-8 w-8 shrink-0 {{ $fitResult['icon'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $fitResult['path'] }}"></path></svg>
+                                            <div>
+                                                <p class="text-xs font-bold text-gray-600 uppercase">Rekomendasi Dokter:</p>
+                                                <p class="text-lg font-bold {{ $fitResult['text'] }}">{{ $fitResult['label'] }}</p>
+                                                <p class="text-xs text-gray-500 mt-0.5">Diperiksa oleh: {{ $fitToWork->medical->name ?? 'Tim Medis' }}</p>
+                                            </div>
+                                        </div>
+
+                                        @if($fitToWork->medical_notes)
+                                            <div class="mt-3 rounded-md bg-white/70 p-3 text-sm text-gray-700">
+                                                <p class="text-xs font-bold text-gray-500 uppercase mb-1">Catatan Dokter:</p>
+                                                <p class="whitespace-pre-line">{{ $fitToWork->medical_notes }}</p>
+                                            </div>
                                         @endif
                                     </div>
-                                    <div>
-                                        <p class="text-xs font-bold text-gray-600 uppercase">Rekomendasi Dokter:</p>
-                                        <p class="text-lg font-bold {{ $fitToWork->is_recommended ? 'text-green-700' : 'text-red-700' }}">
-                                            {{ $fitToWork->is_recommended ? 'DAPAT BEKERJA (FIT)' : 'TIDAK DAPAT BEKERJA (UNFIT)' }}
-                                        </p>
-                                        <p class="text-xs text-gray-500 mt-0.5">Diperiksa oleh: {{ $fitToWork->medical->name ?? 'Tim Medis' }}</p>
-                                    </div>
-                                </div>
+                                @endif
                             @endif
                         </div>
 
@@ -161,7 +228,7 @@
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                                 Validasi Akhir QHSE
                             </h3>
-                            
+
                             <div class="bg-blue-50 p-6 rounded-lg border border-blue-100">
                                 <label class="block text-sm font-bold text-gray-900 mb-3">Keputusan Izin Kerja: <span class="text-red-500">*</span></label>
                                 <div class="flex space-x-6">
@@ -174,7 +241,7 @@
                                         <span class="ml-2 text-sm font-bold text-red-700">TOLAK IZIN KERJA (REJECTED)</span>
                                     </label>
                                 </div>
-                                <p class="text-xs text-blue-600 mt-3 text-center">Pastikan Anda telah memeriksa hasil rekomendasi medis sebelum mengeluarkan keputusan.</p>
+                                <p class="text-xs text-blue-600 mt-3 text-center">Pastikan Anda telah memeriksa hasil rekomendasi medis dan catatan dokter sebelum mengeluarkan keputusan.</p>
                             </div>
                         </div>
                         @endif
@@ -186,7 +253,7 @@
                         <a href="{{ route('fit-to-work.index') }}" class="px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-100 transition">
                             Batal
                         </a>
-                        
+
                         <button type="submit" class="inline-flex items-center px-6 py-2 bg-indigo-600 border border-transparent rounded-md font-bold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition shadow-md">
                             @if(Auth::user()->hasRole('medis'))
                                 Simpan Medis & Lanjut ke QHSE
