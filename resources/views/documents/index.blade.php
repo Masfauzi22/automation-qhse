@@ -16,7 +16,7 @@
             </div>
 
             @hasanyrole('superadmin|qhse')
-            <a href="{{ route('documents.create') }}" 
+            <a href="{{ route('documents.create') }}"
                class="inline-flex items-center gap-2 py-2.5 px-4 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 shadow-sm shadow-emerald-600/20 transition-all duration-200">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -30,10 +30,10 @@
     <!-- Bungkus seluruh konten dengan Alpine.js state untuk pencarian -->
     <div class="py-8 bg-slate-50/50 min-h-screen" x-data="{ search: '' }">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-            
+
             <!-- Notifikasi Sukses -->
             @if (session('success'))
-                <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" x-transition.duration.500ms 
+                <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" x-transition.duration.500ms
                      class="flex items-center gap-3 bg-emerald-50 border border-emerald-200/80 p-4 rounded-xl shadow-xs text-emerald-800">
                     <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -44,7 +44,7 @@
 
             <!-- Notifikasi Error -->
             @if ($errors->any())
-                <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show" x-transition.duration.500ms 
+                <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show" x-transition.duration.500ms
                      class="flex items-start gap-3 bg-rose-50 border border-rose-200/80 p-4 rounded-xl shadow-xs text-rose-800">
                     <svg class="w-5 h-5 text-rose-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -60,14 +60,14 @@
             <!-- Kontainer Utama -->
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
                 <div class="p-6 md:p-8 space-y-6">
-                    
+
                     <!-- Header Tabel, Kolom Pencarian & Tombol Tambah -->
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <h3 class="text-base font-bold text-slate-900">Daftar Dokumen Internal</h3>
                             <p class="text-xs text-slate-500 mt-0.5">Kelola dan pantau seluruh SOP, Instruksi Kerja, dan Form perusahaan.</p>
                         </div>
-                        
+
                         <!-- Area Search -->
                         <div class="w-full md:w-72">
                             <div class="relative">
@@ -76,8 +76,8 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                     </svg>
                                 </div>
-                                <input type="text" x-model="search" 
-                                       class="bg-slate-50/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 block w-full pl-10 pr-4 py-2.5 transition-all placeholder:text-slate-400" 
+                                <input type="text" x-model="search"
+                                       class="bg-slate-50/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 block w-full pl-10 pr-4 py-2.5 transition-all placeholder:text-slate-400"
                                        placeholder="Cari dokumen...">
                             </div>
                         </div>
@@ -96,10 +96,11 @@
                             </thead>
                             <tbody class="divide-y divide-slate-100 bg-white">
                                 @forelse ($documents as $doc)
-                                <tr x-show="search === '' || '{{ strtolower($doc->title . ' ' . ($doc->document_number ?? '') . ' ' . $doc->type) }}'.includes(search.toLowerCase())" 
+                                {{-- Js::from() aman untuk judul yang mengandung tanda petik --}}
+                                <tr x-show="search === '' || {{ Js::from(strtolower($doc->title . ' ' . ($doc->document_number ?? '') . ' ' . $doc->type)) }}.includes(search.toLowerCase())"
                                     x-transition.opacity.duration.300ms
                                     class="hover:bg-slate-50/80 transition-colors">
-                                    
+
                                     <!-- Kolom Info Dokumen (Gabungan Judul & Nomor dengan Ikon Dinamis Berdasarkan Tipe) -->
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center gap-3">
@@ -162,35 +163,35 @@
 
                                     <!-- Kolom Uploader -->
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-slate-900">{{ $doc->uploader->name }}</div>
+                                        <div class="text-sm font-medium text-slate-900">{{ $doc->uploader->name ?? '-' }}</div>
                                         <div class="text-xs font-mono text-slate-500 mt-0.5">{{ $doc->created_at->format('d M Y') }}</div>
                                     </td>
 
                                     <!-- Kolom Aksi -->
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
                                         <div class="flex justify-center items-center gap-1.5">
-                                            
-                                            <!-- Tombol Lihat/Download -->
-                                            <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank" 
-                                               class="p-2 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all" 
+
+                                            <!-- Tombol Lihat/Download (otomatis ikut disk aktif: Supabase di Vercel, /storage di lokal) -->
+                                            <a href="{{ Storage::url($doc->file_path) }}" target="_blank" rel="noopener"
+                                               class="p-2 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all"
                                                title="Lihat Dokumen">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                             </a>
 
                                             @hasanyrole('superadmin|qhse')
                                             <!-- Tombol Edit -->
-                                            <a href="{{ route('documents.edit', $doc->id) }}" 
-                                               class="p-2 text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg transition-all" 
+                                            <a href="{{ route('documents.edit', $doc->id) }}"
+                                               class="p-2 text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg transition-all"
                                                title="Edit Data">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                             </a>
-                                            
+
                                             <!-- Tombol Hapus -->
                                             <form action="{{ route('documents.destroy', $doc->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin ingin menghapus dokumen ini beserta file-nya?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" 
-                                                        class="p-2 text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 rounded-lg transition-all" 
+                                                <button type="submit"
+                                                        class="p-2 text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 rounded-lg transition-all"
                                                         title="Hapus Dokumen">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                                 </button>
@@ -212,7 +213,7 @@
                                     </td>
                                 </tr>
                                 @endforelse
-                                
+
                                 <!-- State Tambahan: Jika Pencarian Tidak Ditemukan -->
                                 <tr x-show="search !== '' && !Array.from($el.parentElement.children).some(tr => tr.style.display !== 'none' && tr !== $el)" style="display: none;">
                                     <td colspan="4" class="px-6 py-8 text-center text-sm text-slate-500">
