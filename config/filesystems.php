@@ -42,16 +42,18 @@ return [
             'report' => false,
         ],
 
-        // Dipakai untuk Supabase Storage (S3-compatible)
+        // Dipakai untuk Supabase Storage (S3-compatible).
+        // Nama variabel sengaja TIDAK memakai awalan AWS_ karena variabel AWS_*
+        // dipakai/ditimpa oleh runtime Vercel sendiri.
         's3' => [
             'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
-            'bucket' => env('AWS_BUCKET'),
-            'url' => env('AWS_URL'),
-            'endpoint' => env('AWS_ENDPOINT'),
-            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'key' => env('SUPABASE_S3_KEY'),
+            'secret' => env('SUPABASE_S3_SECRET'),
+            'region' => env('SUPABASE_S3_REGION', 'ap-southeast-1'),
+            'bucket' => env('SUPABASE_S3_BUCKET', 'documents'),
+            'url' => env('SUPABASE_S3_URL'),
+            'endpoint' => env('SUPABASE_S3_ENDPOINT'),
+            'use_path_style_endpoint' => true,
 
             // AWS SDK versi baru otomatis mengirim checksum tambahan yang kadang
             // ditolak layanan S3-compatible. Kirim checksum hanya jika memang diwajibkan.
