@@ -37,6 +37,26 @@
                             <input type="email" name="email" value="{{ old('email') }}" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                         </div>
 
+                        <!-- Input ID Karyawan (BARU) -->
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">ID Karyawan / NIK</label>
+                            <input type="text" name="employee_number" value="{{ old('employee_number') }}" maxlength="50" placeholder="Contoh: APS-00123" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            <p class="text-xs text-gray-500 mt-1">Opsional. Harus unik, tidak boleh sama dengan user lain.</p>
+                        </div>
+
+                        <!-- Input Perusahaan (BARU) -->
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Perusahaan</label>
+                            <select name="company_id" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                <option value="">-- Pilih Perusahaan --</option>
+                                @foreach($companies as $company)
+                                    <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>
+                                        {{ $company->name }}{{ $company->is_contractor ? ' (Kontraktor)' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <!-- Input Departemen (Dropdown) -->
                         <div class="mb-4">
                             <label class="block text-gray-700 text-sm font-bold mb-2">Departemen</label>

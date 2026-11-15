@@ -12,7 +12,8 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles; 
 
 // UBAH: 'department' diganti menjadi 'department_id' karena sekarang menggunakan tabel relasi
-#[Fillable(['name', 'email', 'password', 'department_id'])]
+// TAMBAH: 'company_id' dan 'employee_number' untuk data pelapor Hazard Report
+#[Fillable(['name', 'email', 'password', 'department_id', 'company_id', 'employee_number'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -55,9 +56,15 @@ class User extends Authenticatable
         return $this->hasMany(PpeRequest::class);
     }
 
-    // Relasi ke Tabel Departemen (BARU)
+    // Relasi ke Tabel Departemen
     public function department()
     {
         return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    // Relasi ke Tabel Perusahaan (BARU)
+    public function company()
+    {
+        return $this->belongsTo(Company::class, 'company_id');
     }
 }

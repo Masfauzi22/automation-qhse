@@ -2,66 +2,142 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Company;
+use App\Models\Department;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Buat Role Utama
-        $roleSuperadmin = Role::firstOrCreate(['name' => 'superadmin']);
-        $roleQhse       = Role::firstOrCreate(['name' => 'qhse']);
-        $rolePekerja    = Role::firstOrCreate(['name' => 'pekerja']); 
-        $roleMedis      = Role::firstOrCreate(['name' => 'medis']);
-        $roleGa         = Role::firstOrCreate(['name' => 'ga']);
-        $rolePicDept    = Role::firstOrCreate(['name' => 'pic_dept']); // <-- Tambahan Role PIC Dept
+        // Hapus cache permission Spatie supaya role baru langsung terbaca
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // 2. Buat Akun Superadmin
-        $superadmin = User::firstOrCreate(
-            ['email' => 'admin@gmail.com'], 
+        // ---------------------------------------------------------------
+        // 1. Role utama
+        // ---------------------------------------------------------------
+        foreach (['superadmin', 'qhse', 'pekerja', 'medis', 'ga', 'pic_dept'] as $role) {
+            Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
+        }
+
+        // ---------------------------------------------------------------
+        // 2. Akun awal
+        //    company    → nama perusahaan (dibuat di CompanySeeder)
+        //    department → nama departemen (dibuat otomatis kalau belum ada)
+        //    nik        → ID karyawan, harus unik
+        // ---------------------------------------------------------------
+        $accounts = [
             [
-                'name' => 'Muhammad Fauzi',
-                'password' => Hash::make('password'), 
-            ]
-        );
-        $superadmin->assignRole($roleSuperadmin);
+                'email'      => 'admin@gmail.com',
+                'name'       => 'Muhammad Fauzi',
+                'role'       => 'superadmin',
+                'company'    => 'PT Elnusa Petrofin',
+                'department' => 'HSSE',
+                'nik'        => 'EPN-0001',
+            ],
+            [
+                'email'      => 'qhse@gmail.com',
+                'name'       => 'Tim QHSE',
+                'role'       => 'qhse',
+                'company'    => 'PT Elnusa Petrofin',
+                'department' => 'HSSE',
+                'nik'        => 'EPN-0002',
+            ],
+            [
+                'email'      => 'pekerja@gmail.com',
+                'name'       => 'Karyawan Biasa',
+                'role'       => 'pekerja',
+                'company'    => 'PT Angkasa Pura Supports',
+                'department' => 'MAINTENANCE',
+                'nik'        => 'APS-0001',
+            ],
+            [
+                'email'      => 'klinik@gmail.com',
+                'name'       => 'Dokter Klinik',
+                'role'       => 'medis',
+                'company'    => 'PT Elnusa Petrofin',
+                'department' => 'MEDICAL',
+                'nik'        => 'EPN-0003',
+            ],
+            [
+                'email'      => 'ga@gmail.com',
+                'name'       => 'Tim General Affairs',
+                'role'       => 'ga',
+                'company'    => 'PT Elnusa Petrofin',
+                'department' => 'GENERAL AFFAIR',
+                'nik'        => 'EPN-0004',
+            ],
+            [
+                'email'      => 'pic@gmail.com',
+                'name'       => 'Atasan / PIC Departemen',
+                'role'       => 'pic_dept',
+                'company'    => 'PT Angkasa Pura Supports',
+                'department' => 'MAINTENANCE',
+                'nik'        => 'APS-0002',
+            ],
+        ];
 
-        // 3. Buat Akun Tim QHSE
-        $qhse = User::firstOrCreate(
-            ['email' => 'qhse@gmail.com'],
-            ['name' => 'Tim QHSE', 'password' => Hash::make('password')]
-        );
-        $qhse->assignRole($roleQhse);
+        foreach ($accounts as $data) {
+            $companyId    = $this->companyId($data['company']);
+            $departmentId = $this->departmentId($data['department']);
 
-        // 4. Buat Akun Pekerja
-        $pekerja = User::firstOrCreate(
-            ['email' => 'pekerja@gmail.com'],
-            ['name' => 'Karyawan Biasa', 'password' => Hash::make('password')]
-        );
-        $pekerja->assignRole($rolePekerja); 
+            $user = User::firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'name'            => $data['name'],
+                    'password'        => Hash::make('password'),
+                    'company_id'      => $companyId,
+                    'department_id'   => $departmentId,
+                    'employee_number' => $this->nikIfFree($data['nik']),
+                ]
+            );
 
-        // 5. Buat Akun Medis / Dokter
-        $medis = User::firstOrCreate(
-            ['email' => 'klinik@gmail.com'],
-            ['name' => 'Dokter Klinik', 'password' => Hash::make('password')]
-        );
-        $medis->assignRole($roleMedis);
+            // User yang sudah ada: hanya isi kolom yang masih kosong,
+            // supaya data yang sudah kamu ubah manual tidak tertimpa.
+            $missing = array_filter([
+                'company_id'      => $user->company_id ? null : $companyId,
+                'department_id'   => $user->department_id ? null : $departmentId,
+                'employee_number' => $user->employee_number ? null : $this->nikIfFree($data['nik'], $user->id),
+            ]);
+            if ($missing) {
+                $user->update($missing);
+            }
 
-        // 6. Buat Akun Tim GA
-        $ga = User::firstOrCreate(
-            ['email' => 'ga@gmail.com'],
-            ['name' => 'Tim General Affairs', 'password' => Hash::make('password')]
-        );
-        $ga->assignRole($roleGa);
+            $user->assignRole($data['role']);
+        }
+    }
 
-        // 7. Buat Akun PIC Dept / Atasan (BARU)
-        $picDept = User::firstOrCreate(
-            ['email' => 'pic@gmail.com'],
-            ['name' => 'Atasan / PIC Departemen', 'password' => Hash::make('password')]
-        );
-        $picDept->assignRole($rolePicDept);
+    // Cari perusahaan berdasarkan nama; buat kalau belum ada
+    private function companyId(string $name): int
+    {
+        return Company::firstOrCreate(['name' => $name])->id;
+    }
+
+    // Cari departemen berdasarkan nama (tidak peduli huruf besar/kecil); buat kalau belum ada
+    private function departmentId(string $name): int
+    {
+        $department = Department::whereRaw('LOWER(name) = ?', [strtolower($name)])->first();
+
+        if (! $department) {
+            $department = new Department();   // tanpa mass assignment, aman walau 'name' belum fillable
+            $department->name = $name;
+            $department->save();
+        }
+
+        return $department->id;
+    }
+
+    // NIK hanya dipakai kalau belum dimiliki user lain (kolomnya unik)
+    private function nikIfFree(string $nik, ?int $exceptUserId = null): ?string
+    {
+        $taken = User::where('employee_number', $nik)
+            ->when($exceptUserId, fn ($q) => $q->where('id', '!=', $exceptUserId))
+            ->exists();
+
+        return $taken ? null : $nik;
     }
 }

@@ -1,8 +1,39 @@
+# Git & editor
 .git
+.github
+.vscode
+.idea
+
+# Rahasia: env laptop TIDAK boleh ikut ke image (Vercel pakai Environment Variables)
 .env
 .env.*
 !.env.example
-database/database.sqlite
+
+# Dependency (di-install ulang di dalam Docker)
 node_modules
-tests
 vendor
+
+# Hasil build lama dari laptop (di-build ulang di Docker)
+public/build
+public/hot
+
+# Symlink storage:link dari laptop (di produksi file ada di Supabase)
+public/storage
+
+# Cache Laravel dari laptop: kalau ikut, produksi bisa memakai config laptop (DB 127.0.0.1, dll)
+bootstrap/cache/*.php
+
+# File upload, log, session, dan cache hasil testing di laptop
+storage/app/public/*
+!storage/app/public/.gitignore
+storage/app/private/*
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing/*
+
+# Lain-lain
+database/database.sqlite
+tests
+*.log

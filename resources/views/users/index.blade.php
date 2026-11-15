@@ -54,7 +54,7 @@
                                 <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                 </div>
-                                <input type="text" x-model="search" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 p-2.5 transition-colors" placeholder="Cari nama, email, dept, atau role...">
+                                <input type="text" x-model="search" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 p-2.5 transition-colors" placeholder="Cari nama, ID, perusahaan, dept...">
                             </div>
 
                             <!-- Tombol Tambah User -->
@@ -72,6 +72,7 @@
                             <thead class="bg-gray-50 sticky top-0 z-10 shadow-sm">
                                 <tr>
                                     <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Profil Karyawan</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Perusahaan</th>
                                     <th scope="col" class="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Departemen</th>
                                     <th scope="col" class="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Role Akses</th>
                                     <th scope="col" class="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Aksi</th>
@@ -79,12 +80,24 @@
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @forelse ($users as $user)
-                                <!-- Logika Search Alpine.js: Mencocokkan Nama, Email, Departemen, atau Role -->
-                                <tr x-show="search === '' || '{{ strtolower($user->name . ' ' . $user->email . ' ' . ($user->department ?? '') . ' ' . $user->roles->pluck('name')->join(' ')) }}'.includes(search.toLowerCase())" 
+                                @php
+                                    // Teks yang bisa dicari: nama, email, ID karyawan, perusahaan, departemen, role
+                                    $searchText = strtolower(implode(' ', [
+                                        $user->name,
+                                        $user->email,
+                                        $user->employee_number,
+                                        $user->company->name ?? '',
+                                        $user->department->name ?? '',
+                                        $user->roles->pluck('name')->join(' '),
+                                    ]));
+                                @endphp
+                                <!-- Teks pencarian disimpan di data-search supaya aman dari tanda petik di nama -->
+                                <tr data-search="{{ $searchText }}"
+                                    x-show="search === '' || $el.dataset.search.includes(search.toLowerCase())" 
                                     x-transition.opacity.duration.300ms
                                     class="hover:bg-slate-50 transition-colors">
                                     
-                                    <!-- Kolom Profil (Avatar, Nama, Email) -->
+                                    <!-- Kolom Profil (Avatar, Nama, Email, ID Karyawan) -->
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
                                             <!-- Avatar Inisial -->
@@ -94,12 +107,28 @@
                                             <div class="ml-4">
                                                 <div class="text-sm font-bold text-gray-900">{{ $user->name }}</div>
                                                 <div class="text-xs text-gray-500 mt-0.5">{{ $user->email }}</div>
+                                                @if($user->employee_number)
+                                                    <div class="text-xs text-gray-400 mt-0.5">ID: {{ $user->employee_number }}</div>
+                                                @else
+                                                    <div class="text-xs italic text-amber-500 mt-0.5">ID karyawan belum diisi</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </td>
 
-                                    <!-- Kolom Departemen (BARU) -->
-                                    <!-- Kolom Departemen (BARU) -->
+                                    <!-- Kolom Perusahaan (BARU) -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if($user->company)
+                                            <span class="text-sm font-semibold text-gray-700">{{ $user->company->name }}</span>
+                                            @if($user->company->is_contractor)
+                                                <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">KONTRAKTOR</span>
+                                            @endif
+                                        @else
+                                            <span class="text-xs italic text-gray-400">-</span>
+                                        @endif
+                                    </td>
+
+                                    <!-- Kolom Departemen -->
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
                                         @if($user->department)
                                             <span class="text-sm font-semibold text-gray-700">{{ $user->department->name }}</span>
@@ -141,7 +170,7 @@
                                 @empty
                                 <!-- Empty State (Tabel Kosong dari Awal) -->
                                 <tr>
-                                    <td colspan="4" class="px-6 py-12 text-center">
+                                    <td colspan="5" class="px-6 py-12 text-center">
                                         <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                                         <h3 class="mt-2 text-sm font-medium text-gray-900">Belum ada user</h3>
                                         <p class="mt-1 text-sm text-gray-500">Mulai dengan menambahkan user baru.</p>
@@ -151,7 +180,7 @@
 
                                 <!-- State Tambahan: Jika Pencarian Tidak Ditemukan -->
                                 <tr x-show="search !== '' && !Array.from($el.parentElement.children).some(tr => tr.style.display !== 'none' && tr !== $el)" style="display: none;">
-                                    <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">
+                                    <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">
                                         Pencarian "<span class="font-bold text-gray-700" x-text="search"></span>" tidak menemukan hasil apapun.
                                     </td>
                                 </tr>

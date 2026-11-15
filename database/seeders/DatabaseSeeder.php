@@ -11,12 +11,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Panggil RolePermissionSeeder di sini
         $this->call([
-            RolePermissionSeeder::class,
-        ]);
+            // 1. Data perusahaan (user bisa merujuk ke perusahaan)
+            CompanySeeder::class,
 
-        $this->call([
+            // 2. Role dan akun awal
+            RolePermissionSeeder::class,
+
+            // 3. Permission menu & submenu dari config/menus.php
+            MenuPermissionSeeder::class,
+
+            // 4. Master kategori bahaya & prioritas Hazard Report
+            HazardMasterSeeder::class,
+
+            // 5. Master data sampling lingkungan
             SamplingSeeder::class,
         ]);
     }

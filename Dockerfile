@@ -7,7 +7,17 @@ RUN npm run build
 
 FROM dunglas/frankenphp:1-php8.4-bookworm AS base
 RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
-    && install-php-extensions intl zip pdo_mysql
+    && install-php-extensions intl zip pdo_mysql opcache \
+    # Batas upload: bawaan php.ini-production hanya 2 MB per file.
+    # Vercel sendiri membatasi ±4,5 MB per request, jadi 5M sudah cukup.
+    && { \
+        echo 'upload_max_filesize=5M'; \
+        echo 'post_max_size=5M'; \
+        echo 'memory_limit=256M'; \
+        echo 'max_file_uploads=10'; \
+        echo 'opcache.enable=1'; \
+        echo 'opcache.validate_timestamps=0'; \
+    } > "$PHP_INI_DIR/conf.d/zz-aqhse.ini"
 
 WORKDIR /app
 
@@ -44,4 +54,7 @@ ENV PORT=80 \
     LOG_CHANNEL=stderr
 
 USER www-data
-CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]
+
+# Saat container menyala: cache config, route, dan view supaya halaman lebih cepat.
+# Kalau gagal (misalnya env belum lengkap), aplikasi tetap dijalankan tanpa cache.
+CMD ["sh", "-c", "php artisan optimize || echo 'optimize gagal, lanjut tanpa cache'; exec frankenphp run --config /etc/frankenphp/Caddyfile"]
