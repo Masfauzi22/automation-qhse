@@ -24,7 +24,8 @@ class UserController extends Controller
         $roles       = Role::all();
         $departments = Department::all();
         $companies   = Company::orderBy('name')->get(); // <-- untuk dropdown perusahaan
-        return view('users.create', compact('roles', 'departments', 'companies'));
+        $positions   = User::POSITIONS;                  // <-- untuk dropdown jabatan
+        return view('users.create', compact('roles', 'departments', 'companies', 'positions'));
     }
 
     public function store(Request $request)
@@ -35,10 +36,12 @@ class UserController extends Controller
             'password'        => 'required|string|min:8',
             'role'            => 'required',
             'department_id'   => 'nullable|exists:departments,id',
+            'position'        => ['nullable', Rule::in(array_keys(User::POSITIONS))], // <-- BARU: jabatan (alur Permit to Work)
             'company_id'      => 'nullable|exists:companies,id',
             'employee_number' => 'nullable|string|max:50|unique:users,employee_number',
         ], [
             'employee_number.unique' => 'ID Karyawan sudah dipakai oleh user lain.',
+            'position.in'            => 'Jabatan tidak valid.',
         ]);
 
         $user = User::create([
@@ -46,6 +49,7 @@ class UserController extends Controller
             'email'           => $request->email,
             'password'        => Hash::make($request->password),
             'department_id'   => $request->department_id,
+            'position'        => $request->position,
             'company_id'      => $request->company_id,
             'employee_number' => $request->employee_number,
         ]);
@@ -60,7 +64,8 @@ class UserController extends Controller
         $roles       = Role::all();
         $departments = Department::all();
         $companies   = Company::orderBy('name')->get();
-        return view('users.edit', compact('user', 'roles', 'departments', 'companies'));
+        $positions   = User::POSITIONS;
+        return view('users.edit', compact('user', 'roles', 'departments', 'companies', 'positions'));
     }
 
     public function update(Request $request, User $user)
@@ -71,17 +76,20 @@ class UserController extends Controller
             'password'        => 'nullable|string|min:8', 
             'role'            => 'required',
             'department_id'   => 'nullable|exists:departments,id',
+            'position'        => ['nullable', Rule::in(array_keys(User::POSITIONS))],
             'company_id'      => 'nullable|exists:companies,id',
             // Unik, kecuali milik user yang sedang diedit
             'employee_number' => ['nullable', 'string', 'max:50', Rule::unique('users', 'employee_number')->ignore($user->id)],
         ], [
             'employee_number.unique' => 'ID Karyawan sudah dipakai oleh user lain.',
+            'position.in'            => 'Jabatan tidak valid.',
         ]);
 
         $dataToUpdate = [
             'name'            => $request->name,
             'email'           => $request->email,
             'department_id'   => $request->department_id,
+            'position'        => $request->position,
             'company_id'      => $request->company_id,
             'employee_number' => $request->employee_number,
         ];

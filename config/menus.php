@@ -78,7 +78,7 @@ return [
                 'icon'     => '<path d="M4 15a8 8 0 1116 0M2.5 16.5h19a1 1 0 011 1v.5a1 1 0 01-1 1h-19a1 1 0 01-1-1v-.5a1 1 0 011-1zM11 4v3M9 4h6"/>',
                 'children' => [
                     ['key' => 'menu_request_qhse.fit_to_work',    'label' => 'Fit to Work',     'route' => 'fit-to-work.index', 'active' => ['fit-to-work.*']],
-                    ['key' => 'menu_request_qhse.permit_to_work', 'label' => 'Permit to Work',  'route' => null,                'active' => ['permit-to-work.*']],
+                    ['key' => 'menu_request_qhse.permit_to_work', 'label' => 'Permit to Work',  'route' => 'my-permit.index',   'active' => ['my-permit.*']],
                     ['key' => 'menu_request_qhse.ppe',            'label' => 'PPE (Equipment)', 'route' => null,                'active' => ['ppe.*']],
                     ['key' => 'menu_request_qhse.simper',         'label' => 'SIMPER',          'route' => 'simper.index',      'active' => ['simper.*']],
                 ],
@@ -91,6 +91,7 @@ return [
                     ['key' => 'menu_tasklist.hazard_report', 'label' => 'Hazard Report', 'route' => 'hazard-report.index', 'active' => ['hazard-report.*']],
                     ['key' => 'menu_tasklist.investigation', 'label' => 'Investigation', 'route' => null,                  'active' => ['investigation.*']],
                     ['key' => 'menu_tasklist.safety_campaign', 'label' => 'Safety Campaign', 'route' => 'safety-campaigns.index', 'active' => ['safety-campaigns.*']],
+                    ['key' => 'menu_tasklist.permit_to_work',  'label' => 'Permit to Work',  'route' => 'permit.index',           'active' => ['permit.*']],
                 ],
             ],
             [

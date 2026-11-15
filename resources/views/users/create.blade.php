@@ -70,6 +70,20 @@
                             </select>
                         </div>
 
+                        <!-- Input Jabatan (BARU: alur Permit to Work) -->
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Jabatan</label>
+                            <select name="position" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                <option value="">-- Pilih Jabatan --</option>
+                                @foreach($positions as $key => $position)
+                                    <option value="{{ $key }}" {{ old('position') === $key ? 'selected' : '' }}>
+                                        {{ $position['label'] }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Permit to Work: Foreman &amp; Supervisor bisa mengajukan; Supervisor &amp; Section Head memeriksa permit bawahannya di departemen yang sama.</p>
+                        </div>
+
                         <!-- Input Password -->
                         <div class="mb-4">
                             <label class="block text-gray-700 text-sm font-bold mb-2">Password (Min. 8 Karakter)</label>

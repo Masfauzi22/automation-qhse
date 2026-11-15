@@ -22,6 +22,9 @@ use App\Http\Controllers\HazardReportController;
 use App\Http\Controllers\SafetyCampaignController;
 use App\Http\Controllers\MySafetyCampaignController;
 use App\Http\Controllers\HazardCronController;
+use App\Http\Controllers\MyWorkPermitController;
+use App\Http\Controllers\WorkPermitController;
+use App\Http\Controllers\WorkPermitCertificateController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +43,11 @@ Route::get('/', function () {
 Route::get('/cron/hazard-reminders', HazardCronController::class)
     ->middleware('throttle:10,1')
     ->name('cron.hazard-reminders');
+
+// Verifikasi sertifikat PTW dari QR code (publik, tanpa login)
+Route::get('/verify/ptw/{token}', [WorkPermitCertificateController::class, 'verify'])
+    ->middleware('throttle:30,1')
+    ->name('permit-certificate.verify');
 
 // Dashboard: selalu bisa dibuka semua user yang login
 Route::get('/dashboard', [DashboardController::class, 'index'])
@@ -87,7 +95,34 @@ Route::middleware('auth')->group(function () {
     Route::resource('fit-to-work', FitToWorkController::class)
         ->middleware('can:menu_request_qhse.fit_to_work');
 
+    // Permit to Work: pengajuan oleh Foreman / Supervisor (Request QHSE → Permit to Work)
+    Route::middleware('can:menu_request_qhse.permit_to_work')->group(function () {
+        Route::get('/my-permits', [MyWorkPermitController::class, 'index'])->name('my-permit.index');
+        Route::get('/my-permits/create', [MyWorkPermitController::class, 'create'])->name('my-permit.create');
+        Route::post('/my-permits', [MyWorkPermitController::class, 'store'])->name('my-permit.store');
+        Route::get('/my-permits/{workPermit}', [MyWorkPermitController::class, 'show'])->name('my-permit.show');
+        Route::get('/my-permits/{workPermit}/edit', [MyWorkPermitController::class, 'edit'])->name('my-permit.edit');
+        Route::put('/my-permits/{workPermit}', [MyWorkPermitController::class, 'update'])->name('my-permit.update');
+        Route::put('/my-permits/{workPermit}/activate', [MyWorkPermitController::class, 'activate'])->name('my-permit.activate');
+        Route::put('/my-permits/{workPermit}/finish', [MyWorkPermitController::class, 'finish'])->name('my-permit.finish');
+    });
+
     // ---------------- Tasklist ----------------
+    // Permit to Work: diperiksa atasan pengaju (sesuai jabatan) → approval QHSE (hak per langkah dicek di controller)
+    Route::middleware('can:menu_tasklist.permit_to_work')->group(function () {
+        Route::get('/permits', [WorkPermitController::class, 'index'])->name('permit.index');
+        Route::get('/permits/{workPermit}', [WorkPermitController::class, 'show'])->name('permit.show');
+        Route::put('/permits/{workPermit}/approve', [WorkPermitController::class, 'approve'])->name('permit.approve');
+        Route::put('/permits/{workPermit}/return', [WorkPermitController::class, 'returnPermit'])->name('permit.return');
+    });
+
+    // Stop Work (QHSE / atasan / pengaju) & lanjutkan (QHSE). Hak dicek di controller.
+    Route::put('/permits/{workPermit}/stop', [WorkPermitController::class, 'stop'])->name('permit.stop');
+    Route::put('/permits/{workPermit}/resume', [WorkPermitController::class, 'resume'])->name('permit.resume');
+
+    // Sertifikat Penyelesaian (pengaju, atasan, QHSE). Hak dicek di controller.
+    Route::get('/permits/{workPermit}/certificate', [WorkPermitCertificateController::class, 'show'])->name('permit-certificate.show');
+
     // Hazard Report: HSE melihat semua, PIC hanya departemennya (diatur di controller)
     Route::middleware('can:menu_tasklist.hazard_report')->group(function () {
         Route::get('/hazard-reports', [HazardReportController::class, 'index'])->name('hazard-report.index');
