@@ -7,7 +7,7 @@
         'Jenis'             => implode(' · ', array_filter([$config['label'], implode(', ', $permit->workTypeLabels())])),
         'Pekerjaan'         => $permit->project_name,
         'Lokasi'            => $permit->location,
-        'Pengaju'           => $permit->applicant_name . ' (' . $permit->applicantPositionLabel() . ' ' . ($permit->applicantDepartment?->name ?? '') . ')',
+        'Dibuat oleh'       => $permit->applicant_name . ' (' . $permit->applicantPositionLabel() . ' ' . ($permit->applicantDepartment?->name ?? '') . ')',
         'Periode Izin'      => $permit->start_date->translatedFormat('d M Y') . ' – ' . $permit->end_date->translatedFormat('d M Y'),
         'Pekerjaan Selesai' => $permit->work_finished_at?->translatedFormat('d M Y, H:i') ?? '-',
         'Diperiksa'         => $closeChecked ? $closeChecked->user_name . ' · ' . $closeChecked->user_title : '-',

@@ -25,6 +25,7 @@ use App\Http\Controllers\HazardCronController;
 use App\Http\Controllers\MyWorkPermitController;
 use App\Http\Controllers\WorkPermitController;
 use App\Http\Controllers\WorkPermitCertificateController;
+use App\Http\Controllers\WorkPermitDocumentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -122,6 +123,9 @@ Route::middleware('auth')->group(function () {
 
     // Sertifikat Penyelesaian (pengaju, atasan, QHSE). Hak dicek di controller.
     Route::get('/permits/{workPermit}/certificate', [WorkPermitCertificateController::class, 'show'])->name('permit-certificate.show');
+
+    // Surat Izin (PDF) untuk bukti saat sidak, tersedia setelah disetujui QHSE. Hak dicek di controller.
+    Route::get('/permits/{workPermit}/document', [WorkPermitDocumentController::class, 'show'])->name('permit-document.show');
 
     // Hazard Report: HSE melihat semua, PIC hanya departemennya (diatur di controller)
     Route::middleware('can:menu_tasklist.hazard_report')->group(function () {

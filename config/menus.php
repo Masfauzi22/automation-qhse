@@ -80,7 +80,7 @@ return [
                     ['key' => 'menu_request_qhse.fit_to_work',    'label' => 'Fit to Work',     'route' => 'fit-to-work.index', 'active' => ['fit-to-work.*']],
                     ['key' => 'menu_request_qhse.permit_to_work', 'label' => 'Permit to Work',  'route' => 'my-permit.index',   'active' => ['my-permit.*']],
                     ['key' => 'menu_request_qhse.ppe',            'label' => 'PPE (Equipment)', 'route' => null,                'active' => ['ppe.*']],
-                    ['key' => 'menu_request_qhse.simper',         'label' => 'SIMPER',          'route' => 'simper.index',      'active' => ['simper.*']],
+                    ['key' => 'menu_request_qhse.simper',         'label' => 'SIMPER',          'route' => null,      'active' => ['simper.*']],
                 ],
             ],
             [

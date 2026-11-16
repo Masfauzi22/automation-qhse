@@ -15,7 +15,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sertifikat {{ $cert->certificate_number }}</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @page { size: A4 landscape; margin: 0; }
         * { box-sizing: border-box; }
@@ -73,9 +72,6 @@
         .sign .stamp { display: inline-block; margin: 6px 0 4px; border: 1.5px solid #059669; color: #059669; border-radius: 4px; padding: 2px 6px; font-size: 9px; font-weight: 800; letter-spacing: .5px; transform: rotate(-3deg); }
         .sign .who { border-top: 1px solid #9ca3af; padding-top: 4px; font-weight: 700; font-size: 12px; }
         .sign .meta { color: #6b7280; font-size: 10px; }
-        .qr { text-align: center; font-size: 9.5px; color: #6b7280; width: 30mm; }
-        .qr #qrcode { width: 26mm; height: 26mm; margin: 0 auto 3px; }
-        .qr #qrcode img, .qr #qrcode canvas { width: 26mm !important; height: 26mm !important; }
 
         .issued { text-align: center; font-size: 10px; color: #9ca3af; margin-top: 4mm; }
         .ribbon { position: absolute; top: 18mm; right: -14mm; transform: rotate(35deg); background: #b91c1c; color: #fff; font-size: 10px; font-weight: 800; letter-spacing: 1px; padding: 4px 18mm; }
@@ -133,7 +129,7 @@
             <div class="location">{{ $permit->location }} · Area {{ $permit->ownerDepartment?->name }}</div>
 
             <div class="grid">
-                <div class="cell"><div class="k">Pengaju</div><div class="v">{{ $permit->applicant_name }}</div><div class="k" style="text-transform:none;letter-spacing:0;font-weight:500">{{ $permit->applicantPositionLabel() }} {{ $permit->applicantDepartment?->name }}</div></div>
+                <div class="cell"><div class="k">Dibuat oleh</div><div class="v">{{ $permit->applicant_name }}</div><div class="k" style="text-transform:none;letter-spacing:0;font-weight:500">{{ $permit->applicantPositionLabel() }} {{ $permit->applicantDepartment?->name }}</div></div>
                 <div class="cell"><div class="k">Jenis Pekerjaan</div><div class="v">{{ $works }}</div></div>
                 <div class="cell"><div class="k">Periode Izin</div><div class="v">{{ $permit->start_date->translatedFormat('d M') }} – {{ $permit->end_date->translatedFormat('d M Y') }}</div><div class="k" style="text-transform:none;letter-spacing:0;font-weight:500">Jam {{ $fmtTime($permit->start_time) }}–{{ $fmtTime($permit->end_time) }}</div></div>
                 <div class="cell"><div class="k">Pekerjaan Selesai</div><div class="v">{{ $permit->work_finished_at?->translatedFormat('d M Y, H:i') ?? '-' }}</div></div>
@@ -174,27 +170,23 @@
             <div class="foot">
                 <div class="signs">
                     <div class="sign">
-                        <div class="role">Pengaju</div>
+                        <div class="role">Dibuat oleh</div>
                         <div class="stamp">✓ DIAJUKAN</div>
                         <div class="who">{{ $permit->applicant_name }}</div>
                         <div class="meta">{{ $permit->applicantPositionLabel() }} {{ $permit->applicantDepartment?->name }}</div>
                     </div>
                     <div class="sign">
-                        <div class="role">Diperiksa</div>
+                        <div class="role">Diperiksa oleh</div>
                         <div class="stamp">✓ DISETUJUI DIGITAL</div>
                         <div class="who">{{ $closeChecked?->user_name ?? '-' }}</div>
                         <div class="meta">{{ $closeChecked?->user_title }} · {{ $closeChecked?->created_at->translatedFormat('d M Y') }}</div>
                     </div>
                     <div class="sign">
-                        <div class="role">Disetujui</div>
+                        <div class="role">Disetujui oleh</div>
                         <div class="stamp">✓ DISETUJUI DIGITAL</div>
                         <div class="who">{{ $closeApproved?->user_name ?? $cert->issued_by_name }}</div>
                         <div class="meta">QHSE · {{ $cert->issued_at->translatedFormat('d M Y') }}</div>
                     </div>
-                </div>
-                <div class="qr">
-                    <div id="qrcode"></div>
-                    Scan untuk verifikasi
                 </div>
             </div>
 
@@ -204,16 +196,5 @@
             </div>
         </div>
     </div>
-
-    <script>
-        (function () {
-            var el = document.getElementById('qrcode');
-            if (window.QRCode) {
-                new QRCode(el, { text: @js($cert->verifyUrl()), width: 256, height: 256, correctLevel: QRCode.CorrectLevel.M });
-            } else {
-                el.textContent = 'QR tidak dapat dimuat';
-            }
-        })();
-    </script>
 </body>
 </html>

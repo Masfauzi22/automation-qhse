@@ -11,7 +11,7 @@
 return [
 
     // Tanggal temuan boleh mundur maksimal berapa hari dari hari ini
-    'max_backdate_days' => 7,
+    'max_backdate_days' => 365,
 
     // Batas waktu follow up (hari) kalau prioritas tidak punya pengaturan sendiri
     'default_sla_days' => 3,

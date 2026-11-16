@@ -38,7 +38,6 @@
     $stepLabels = [
         'checked'      => ['Diperiksa', 'Atasan pengaju (Supervisor / Section Head)'],
         'approved'     => ['Disetujui', 'QHSE'],
-        'acknowledged' => ['Diketahui', 'QHSE'],
     ];
 @endphp
 
@@ -59,6 +58,14 @@
                 <span class="inline-flex rounded-full px-3 py-1 text-sm font-bold {{ $dailyLogs->has($todayDay) ? 'bg-emerald-600 text-white' : 'bg-amber-500 text-white' }}">
                     {{ $dailyLogs->has($todayDay) ? "Day {$todayDay} sudah diaktifkan" : "Day {$todayDay} belum diaktifkan" }}
                 </span>
+            @endif
+            {{-- Surat Izin (PDF): bukti izin saat sidak, tersedia setelah disetujui QHSE --}}
+            @if (\App\Http\Controllers\WorkPermitDocumentController::isAvailable($permit))
+                <a href="{{ route('permit-document.show', $permit) }}" target="_blank"
+                   class="inline-flex items-center gap-1.5 rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-gray-700">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                    Surat Izin (PDF)
+                </a>
             @endif
         </div>
     </div>
@@ -99,7 +106,7 @@
                 <div class="border-b border-gray-100 px-6 py-4"><h4 class="text-sm font-bold text-gray-900">Pelaksanaan Pekerjaan</h4></div>
                 <dl class="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
                     <div>
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-gray-400">Pengaju</dt>
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-gray-400">Dibuat oleh</dt>
                         <dd class="mt-0.5 font-medium text-gray-900">{{ $permit->applicant_name }}</dd>
                         <dd class="text-xs text-gray-500">{{ $permit->applicantPositionLabel() }} · {{ $permit->applicantDepartment?->name }}</dd>
                     </div>
@@ -355,10 +362,12 @@
                     <p class="text-xs text-gray-500">Telah dilakukan pemeriksaan pada kondisi di atas, memenuhi persyaratan & dalam kondisi aman.</p>
                 </div>
                 <div class="px-6 py-5 space-y-5">
+                    {{-- Kotak "Diketahui" tidak ditampilkan: sudah diwakili "Disetujui" QHSE --}}
                     @foreach (WorkPermit::SIGNATURES as $phase => $steps)
+                        @php unset($steps['acknowledged']); @endphp
                         <div>
                             <p class="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">{{ $signatureBoxes[$phase]['title'] }}</p>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 @foreach ($steps as $step => $action)
                                     @php $sig = $permit->signature($action); @endphp
                                     <div class="rounded-lg border p-3 text-center {{ $sig ? 'border-emerald-200 bg-emerald-50/50' : 'border-dashed border-gray-200' }}">
