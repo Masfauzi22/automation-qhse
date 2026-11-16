@@ -57,15 +57,9 @@
                         </a>
                     @else
                         <a href="{{ route('login') }}"
-                           class="rounded-xl px-4 py-2.5 text-sm font-semibold text-white/90 transition hover:bg-white/10 hover:text-white">
+                           class="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-emerald-800 shadow-lg shadow-black/20 transition hover:bg-emerald-50">
                             Masuk
                         </a>
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}"
-                               class="rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">
-                                Daftar
-                            </a>
-                        @endif
                     @endauth
                 </div>
             @endif
@@ -257,9 +251,6 @@
                     <a href="{{ url('/dashboard') }}" class="rounded-xl bg-white px-7 py-3.5 text-[15px] font-bold text-emerald-800 shadow-lg transition hover:bg-emerald-50">Buka Dashboard</a>
                 @else
                     <a href="{{ route('login') }}" class="rounded-xl bg-white px-7 py-3.5 text-[15px] font-bold text-emerald-800 shadow-lg transition hover:bg-emerald-50">Masuk</a>
-                    @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="rounded-xl border border-white/30 px-7 py-3.5 text-[15px] font-semibold text-white transition hover:bg-white/10">Buat akun</a>
-                    @endif
                 @endauth
             </div>
         </div>

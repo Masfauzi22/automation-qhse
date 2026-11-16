@@ -89,7 +89,7 @@ return [
                 'icon'     => '<path d="M9 4.5h6a1 1 0 011 1V6h1a2 2 0 012 2v11a2 2 0 01-2 2H7a2 2 0 01-2-2V8a2 2 0 012-2h1V5.5a1 1 0 011-1zM9 12h6M9 15.5h6M9 8.5h6"/>',
                 'children' => [
                     ['key' => 'menu_tasklist.hazard_report', 'label' => 'Hazard Report', 'route' => 'hazard-report.index', 'active' => ['hazard-report.*']],
-                    ['key' => 'menu_tasklist.investigation', 'label' => 'Investigation', 'route' => null,                  'active' => ['investigation.*']],
+                    ['key' => 'menu_tasklist.investigation', 'label' => 'Safety Inspection', 'route' => null,                  'active' => ['investigation.*']],
                     ['key' => 'menu_tasklist.safety_campaign', 'label' => 'Safety Campaign', 'route' => 'safety-campaigns.index', 'active' => ['safety-campaigns.*']],
                     ['key' => 'menu_tasklist.permit_to_work',  'label' => 'Permit to Work',  'route' => 'permit.index',           'active' => ['permit.*']],
                 ],
@@ -117,7 +117,7 @@ return [
                 'icon'     => '<path d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.964 0a9 9 0 10-11.964 0m11.964 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/>',
                 'children' => [
                     ['key' => 'menu_personal_record.hazard_report', 'label' => 'Hazard Report', 'route' => 'my-hazard-report.index', 'active' => ['my-hazard-report.*']],
-                    ['key' => 'menu_personal_record.investigation', 'label' => 'Investigation', 'route' => null,                     'active' => ['my-investigation.*']],
+                    ['key' => 'menu_personal_record.investigation', 'label' => 'Safety Inspection', 'route' => null,                     'active' => ['my-investigation.*']],
                     ['key' => 'menu_personal_record.safety_campaign', 'label' => 'Safety Campaign', 'route' => 'my-safety-campaign.index', 'active' => ['my-safety-campaign.*']],
                     ['key' => 'menu_personal_record.safety_talk',   'label' => 'Safety Talk',   'route' => null,                     'active' => ['safety-talk.*']],
                     ['key' => 'menu_personal_record.training',      'label' => 'Training',      'route' => null,                     'active' => ['training.*']],

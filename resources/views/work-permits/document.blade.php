@@ -10,7 +10,6 @@
     $issuer    = config('permits.certificate.issuer', 'HSE Department');
     $site      = config('permits.certificate.site', '');
     $color     = $config['icon_color'] ?? '#dc2626';
-    [$stampText, $stampColor, $stampNote] = $stamp;
 
     $checks    = $permit->checks->keyBy('item_key');
     $gasTest   = $permit->openGasTest();
@@ -64,9 +63,6 @@
         .title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; }
         .title h1 { margin: 0; font-size: 17px; letter-spacing: .3px; text-transform: uppercase; }
         .title p { margin: 2px 0 0; font-size: 10.5px; color: #6b7280; }
-        .stamp { flex-shrink: 0; text-align: center; border: 3px solid {{ $stampColor }}; color: {{ $stampColor }}; border-radius: 8px; padding: 5px 12px; transform: rotate(-4deg); max-width: 62mm; }
-        .stamp b { display: block; font-size: 18px; letter-spacing: 1.5px; font-weight: 900; }
-        .stamp span { display: block; font-size: 9px; font-weight: 700; margin-top: 1px; }
 
         .alert { margin-top: 6px; padding: 5px 9px; border-radius: 6px; font-size: 10px; line-height: 1.45; }
         .alert.info { background: #fffbeb; border: 1px solid #fde68a; color: #78350f; }
@@ -146,10 +142,6 @@
             <div class="title">
                 <h1>{{ $config['title'] }}</h1>
                 <p>Permit to Work · {{ $config['label'] }} · disetujui secara digital melalui {{ config('app.name') }}</p>
-            </div>
-            <div class="stamp">
-                <b>{{ $stampText }}</b>
-                @if ($stampNote) <span>{{ $stampNote }}</span> @endif
             </div>
         </div>
 
