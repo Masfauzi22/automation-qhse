@@ -10,6 +10,7 @@ use App\Models\WorkPermitGasTest;
 use App\Models\WorkPermitLog;
 use App\Support\Uploads;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -115,13 +116,16 @@ class MyWorkPermitController extends Controller
         $this->authorizeApplicant($request);
         abort_unless($workPermit->isEditable(), 403, 'Permit ini sedang diproses dan tidak bisa diubah.');
 
-        $config = $workPermit->config();
-        $data   = $this->validatePermit($request, $workPermit->type, $config, $workPermit);
+        $config     = $workPermit->config();
+        $wasPending = $workPermit->status === WorkPermit::STATUS_PENDING_CHECK;
+        $data       = $this->validatePermit($request, $workPermit->type, $config, $workPermit);
 
         $this->save($request, $workPermit, $workPermit->type, $config, $data);
 
         return redirect()->route('my-permit.show', $workPermit)
-            ->with('success', "Permit {$workPermit->permit_number} diajukan ulang dan menunggu pemeriksaan.");
+            ->with('success', $wasPending
+                ? "Perubahan permit {$workPermit->permit_number} disimpan. Masih menunggu pemeriksaan {$workPermit->supervisor_name}."
+                : "Permit {$workPermit->permit_number} diajukan ulang dan menunggu pemeriksaan {$workPermit->supervisor_name}.");
     }
 
     // =================================================================
@@ -341,6 +345,8 @@ class MyWorkPermitController extends Controller
                                 ->get(['id', 'permit_number', 'type', 'project_name', 'location', 'status', 'start_date', 'end_date'])
                                 : collect(),
             'user'        => $request->user()->load(['company', 'department']),
+            // Dropdown "Diperiksa oleh": atasan di departemen pengaju
+            'checkers'    => WorkPermit::checkerCandidates($request->user()->department_id, $request->user()->position, $request->user()->id),
             'departments' => Department::orderBy('name')->get(),
             'checks'      => $permit->exists ? $permit->checks->keyBy('item_key') : collect(),
             'gasTest'     => $permit->exists ? $permit->openGasTest() : null,
@@ -366,6 +372,9 @@ class MyWorkPermitController extends Controller
         $start    = $request->date('start_date');
         $watcher  = WorkPermit::watcherConfig($config);
         $extraMax = (int) ($config['extra_notes'] ?? 0);
+        $applicant  = $request->user();
+        $checkerIds = WorkPermit::checkerCandidates($applicant->department_id, $applicant->position, $applicant->id)
+                        ->pluck('id')->all();
 
         $rules = [
             'type'                  => ['required', Rule::in(array_keys(config('permits.types')))],
@@ -374,7 +383,8 @@ class MyWorkPermitController extends Controller
             'location'              => ['required', 'string', 'max:255'],
             'latitude'              => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude'             => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
-            'supervisor_name'       => ['required', 'string', 'max:150'],
+            // Pemeriksa dipilih dari dropdown (atasan di departemen pengaju)
+            'checker_id'            => ['required', 'integer', Rule::in($checkerIds)],
             'worker_count'          => ['required', 'integer', 'min:1', 'max:500'],
             'tools'                 => ['required', 'string', 'max:1000'],
             'fire_watch_name'       => ['required', 'string', 'max:150'],
@@ -462,6 +472,8 @@ class MyWorkPermitController extends Controller
         $rules['gas.tested_at']      = [$gasNeeded ? 'required' : 'nullable', 'date', 'before_or_equal:now'];
 
         $messages = [
+            'checker_id.required' => 'Pilih atasan yang akan memeriksa permit ini.',
+            'checker_id.in'       => 'Atasan yang dipilih tidak bisa memeriksa permit ini. Pilih lagi dari daftar.',
             'required'                       => ':attribute wajib diisi.',
             'work_types.required'            => 'Pilih minimal satu jenis pekerjaan.',
             'work_type_other.required'       => 'Tuliskan jenis pekerjaan lain-lain.',
@@ -487,7 +499,7 @@ class MyWorkPermitController extends Controller
             'owner_department_id' => 'Departemen pemilik area',
             'project_name'        => 'Nama pekerjaan',
             'location'            => 'Lokasi kerja',
-            'supervisor_name'     => 'Nama atasan',
+            'checker_id'          => 'Pemeriksa',
             'worker_count'        => 'Jumlah pekerja',
             'tools'               => 'Alat yang digunakan',
             'fire_watch_name'     => $watcher['label'],
@@ -534,6 +546,21 @@ class MyWorkPermitController extends Controller
         try {
             DB::transaction(function () use ($request, $permit, $type, $config, $data, $user, &$storedPaths) {
                 $isResubmit = $permit->exists;
+                $prevStatus = $permit->status;
+
+                // Kunci baris supaya tidak bentrok dengan atasan yang sedang memeriksa.
+                // Kalau ternyata sudah diperiksa duluan, perubahan dibatalkan.
+                if ($isResubmit) {
+                    $current = WorkPermit::whereKey($permit->id)->lockForUpdate()->value('status');
+                    if (! in_array($current, WorkPermit::EDITABLE_STATUSES, true)) {
+                        throw new HttpResponseException(
+                            redirect()->route('my-permit.show', $permit)
+                                ->withErrors(['Permit ini sudah diperiksa atasan, jadi perubahanmu tidak disimpan. Kalau ada yang salah, minta atasan mengembalikan permit untuk revisi.'])
+                        );
+                    }
+                }
+
+                $checker = \App\Models\User::find($data['checker_id']);
 
                 // Data tambahan per jenis permit (kolom JSON details)
                 $details = $permit->details ?? [];
@@ -566,7 +593,8 @@ class MyWorkPermitController extends Controller
                     'location'              => $data['location'],
                     'latitude'              => $data['latitude'] ?? null,
                     'longitude'             => $data['longitude'] ?? null,
-                    'supervisor_name'       => $data['supervisor_name'],
+                    'checker_id'            => $checker->id,
+                    'supervisor_name'       => $checker->name, // catatan nama pemeriksa
                     'worker_count'          => $data['worker_count'],
                     'tools'                 => $data['tools'],
                     'fire_watch_name'       => $data['fire_watch_name'],
@@ -661,7 +689,11 @@ class MyWorkPermitController extends Controller
                     'user_id'    => $user->id,
                     'user_name'  => $user->name,
                     'user_title' => trim($user->positionLabel() . ' ' . ($user->department?->name ?? '')),
-                    'note'       => $isResubmit ? 'Diajukan ulang setelah revisi' : null,
+                    'note'       => match (true) {
+                        ! $isResubmit                                    => "Diperiksa oleh {$checker->name}",
+                        $prevStatus === WorkPermit::STATUS_PENDING_CHECK => "Pengajuan diperbarui sebelum diperiksa. Pemeriksa: {$checker->name}",
+                        default                                          => "Diajukan ulang setelah revisi. Pemeriksa: {$checker->name}",
+                    },
                 ]);
             });
         } catch (\Throwable $e) {

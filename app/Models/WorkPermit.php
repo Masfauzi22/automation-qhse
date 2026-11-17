@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
     'applicant_id', 'applicant_name', 'applicant_position', 'applicant_department_id',
     'executor_type', 'contractor_company_id', 'owner_department_id',
     'project_name', 'location', 'latitude', 'longitude',
-    'supervisor_name', 'worker_count', 'tools', 'fire_watch_name',
+    'supervisor_name', 'checker_id', 'worker_count', 'tools', 'fire_watch_name',
     'work_types', 'work_type_other', 'details',
     'start_date', 'end_date', 'start_time', 'end_time',
     'work_finished_at', 'post_watch_until', 'final_condition',
@@ -48,8 +48,9 @@ class WorkPermit extends Model
         self::STATUS_EXPIRED                => ['label' => 'Kedaluwarsa',            'class' => 'bg-red-600 text-white border-red-600'],
     ];
 
-    // Status yang masih boleh diubah oleh pengaju
-    public const EDITABLE_STATUSES = [self::STATUS_RETURNED];
+    // Status yang masih boleh diubah oleh pengaju:
+    // dikembalikan untuk revisi, atau sudah diajukan tapi belum diperiksa atasan
+    public const EDITABLE_STATUSES = [self::STATUS_RETURNED, self::STATUS_PENDING_CHECK];
 
     // Status permit lain yang boleh dikaitkan (mis. permit Pekerjaan Panas untuk butir 8 Ketinggian)
     public const LINKABLE_STATUSES = [
@@ -91,6 +92,7 @@ class WorkPermit extends Model
     // ---------------------------------------------------------------
     public function applicant()        { return $this->belongsTo(User::class, 'applicant_id'); }
     public function applicantDepartment() { return $this->belongsTo(Department::class, 'applicant_department_id'); }
+    public function checker()          { return $this->belongsTo(User::class, 'checker_id'); }
     public function contractor()       { return $this->belongsTo(Company::class, 'contractor_company_id'); }
     public function ownerDepartment()  { return $this->belongsTo(Department::class, 'owner_department_id'); }
     public function checks()           { return $this->hasMany(WorkPermitCheck::class)->orderBy('id'); }
@@ -252,6 +254,70 @@ class WorkPermit extends Model
     public function isEditable(): bool
     {
         return in_array($this->status, self::EDITABLE_STATUSES, true);
+    }
+
+    // Label tombol ubah untuk pengaju
+    public function editLabel(): string
+    {
+        return $this->status === self::STATUS_RETURNED ? 'Revisi & Ajukan Ulang' : 'Edit Pengajuan';
+    }
+
+    // ---------------------------------------------------------------
+    // Pemeriksa (atasan pengaju)
+    // ---------------------------------------------------------------
+
+    // Calon pemeriksa untuk dropdown: departemen sama, jabatan lebih tinggi dari pengaju, minimal Supervisor
+    public static function checkerCandidates(?int $departmentId, ?string $applicantPosition, ?int $excludeUserId = null)
+    {
+        $applicantRank = User::positionRank($applicantPosition);
+        $positions = collect(User::POSITIONS)
+            ->filter(fn ($p) => $p['rank'] > $applicantRank && $p['rank'] >= User::PERMIT_CHECKER_MIN_RANK)
+            ->keys()
+            ->all();
+
+        if (! $departmentId || ! $positions) {
+            return collect();
+        }
+
+        return User::with('department')
+            ->where('department_id', $departmentId)
+            ->whereIn('position', $positions)
+            ->when($excludeUserId, fn ($q) => $q->where('id', '!=', $excludeUserId))
+            ->orderBy('name')
+            ->get()
+            ->sortBy(fn (User $u) => User::positionRank($u->position)) // Supervisor dulu, lalu Section Head
+            ->values();
+    }
+
+    // Boleh memeriksa permit ini?
+    //   - pemeriksa yang dipilih pengaju, atau
+    //   - atasan si pemeriksa di departemen yang sama (mengambil alih kalau pemeriksa berhalangan)
+    // Permit lama tanpa pemeriksa terpilih: semua atasan yang memenuhi syarat.
+    public function canBeCheckedBy(User $user): bool
+    {
+        if ((int) $this->applicant_id === (int) $user->id
+            || ! $user->canCheckPermitFrom($this->applicant_position, $this->applicant_department_id)) {
+            return false;
+        }
+
+        if (! $this->checker_id || (int) $this->checker_id === (int) $user->id) {
+            return true;
+        }
+
+        $checker = $this->checker;
+
+        // Akun pemeriksa sudah tidak ada / pindah departemen → atasan mana pun yang memenuhi syarat
+        if (! $checker || (int) $checker->department_id !== (int) $this->applicant_department_id) {
+            return true;
+        }
+
+        return User::positionRank($user->position) > User::positionRank($checker->position);
+    }
+
+    // Yang memeriksa sekarang adalah atasan pengganti, bukan pemeriksa yang dipilih
+    public function isTakeoverBy(User $user): bool
+    {
+        return $this->checker_id && (int) $this->checker_id !== (int) $user->id && $this->canBeCheckedBy($user);
     }
 
     public function hasCoordinates(): bool

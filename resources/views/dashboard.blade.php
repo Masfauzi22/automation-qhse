@@ -11,6 +11,25 @@
     // Bulan dengan tunggakan open terbanyak
     $bulanOpenTerbanyak = $hazard['monthly']->sortByDesc('open')->first();
     $selisihTarget      = $s['pct_close'] === null ? null : round($s['pct_close'] - $target, 1);
+
+    // Sumber data: live dari Google Sheets / data terakhir / snapshot
+    $source      = $hazard['source'] ?? 'google';
+    $updatedAt   = \App\Support\HazardSheetDashboard::updatedLabel($hazard);
+    $canRefresh  = Auth::user()?->hasAnyRole(['superadmin', 'qhse']);
+    $sourceBadge = [
+        'google'    => ['Live', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+        'last_good' => ['Data terakhir', 'bg-amber-50 text-amber-700 border-amber-200'],
+        'snapshot'  => ['Snapshot', 'bg-gray-100 text-gray-600 border-gray-200'],
+    ][$source] ?? ['–', 'bg-gray-100 text-gray-600 border-gray-200'];
+
+    // Laporan masuk & ditolak
+    $intake      = $hazard['intake'] ?? [];
+    $alasan      = collect($intake['alasan'] ?? [])->sortDesc();
+    $alasanMax   = max($alasan->max() ?? 0, 1);
+
+    // Bulan yang sudah ada datanya (untuk pewarnaan tabel target divisi)
+    $bulanAktif  = $hazard['monthly']->values()->map(fn ($m) => $m['diterima'] > 0)->all();
+    $bulanSingkat = $hazard['monthly']->values()->map(fn ($m) => substr($m['bulan'], 0, 3))->all();
 @endphp
 
 <x-app-layout>
@@ -54,7 +73,7 @@
                     </div>
                 </div>
 
-                <!-- Kartu: Permit to Work (dummy) -->
+                <!-- Kartu: Permit to Work (dari database: permit berstatus Aktif) -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center gap-4 hover:shadow-md transition">
                     <div class="p-3 bg-amber-50 text-amber-600 rounded-lg">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -63,7 +82,7 @@
                     </div>
                     <div>
                         <p class="text-sm font-medium text-gray-500">Active PTW</p>
-                        <h4 class="text-2xl font-bold text-gray-900">8</h4>
+                        <h4 class="text-2xl font-bold text-gray-900">{{ $fmtNum($activePermits ?? 0) }}</h4>
                     </div>
                 </div>
 
@@ -110,7 +129,7 @@
                             <span class="text-sm font-medium text-gray-700 group-hover:text-indigo-700">Upload Dokumen Baru</span>
                             <span class="text-gray-400 group-hover:text-indigo-500">&rarr;</span>
                         </a>
-                        <a href="#" class="flex items-center justify-between p-3 bg-gray-50 hover:bg-indigo-50 border border-gray-100 rounded-lg transition group">
+                        <a href="{{ Route::has('my-hazard-report.create') ? route('my-hazard-report.create') : '#' }}" class="flex items-center justify-between p-3 bg-gray-50 hover:bg-indigo-50 border border-gray-100 rounded-lg transition group">
                             <span class="text-sm font-medium text-gray-700 group-hover:text-indigo-700">Lapor Hazard (Bahaya)</span>
                             <span class="text-gray-400 group-hover:text-indigo-500">&rarr;</span>
                         </a>
@@ -136,8 +155,63 @@
                         <h3 class="text-lg font-bold text-gray-900">Hazard Report {{ $hazard['tahun'] }}</h3>
                         <p class="text-sm text-gray-500">Rekap temuan, progres follow up per departemen, dan jenis temuan.</p>
                     </div>
-                    <span class="text-xs text-gray-400">Sumber: Google Sheet Hazard Report {{ $hazard['tahun'] }}</span>
+                    <div class="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                        <span class="rounded-full border px-2 py-0.5 font-semibold {{ $sourceBadge[1] }}">{{ $sourceBadge[0] }}</span>
+                        <span>
+                            Sumber: Google Sheet Hazard Report {{ $hazard['tahun'] }}@if ($updatedAt), diperbarui {{ $updatedAt }}@endif
+                        </span>
+                        @if ($canRefresh)
+                            <a href="{{ route('dashboard', ['refresh' => 1]) }}" class="font-semibold text-indigo-600 hover:text-indigo-800">Muat ulang</a>
+                        @endif
+                    </div>
                 </div>
+
+                @if ($source !== 'google')
+                    <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        Google Sheets sedang tidak bisa diakses, jadi yang tampil adalah
+                        {{ $source === 'last_good' ? 'data terakhir yang berhasil dibaca' : 'snapshot data yang tersimpan di sistem' }}.
+                        Dashboard akan mencoba lagi otomatis dalam beberapa menit.
+                    </div>
+                @endif
+
+                <!-- Laporan masuk & alasan ditolak -->
+                @if (! empty($intake['masuk']))
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div class="rounded-lg border border-gray-100 p-5">
+                            <h4 class="text-sm font-bold text-gray-900">Laporan Masuk</h4>
+                            <p class="text-xs text-gray-500">Semua laporan sebelum divalidasi tim HSE.</p>
+                            <p class="mt-3 text-3xl font-bold text-gray-900 tabular-nums">{{ $fmtNum($intake['masuk']) }}</p>
+                            @php
+                                $pctDiterima = $intake['masuk'] ? round(($intake['diterima'] ?? 0) / $intake['masuk'] * 100, 1) : 0;
+                            @endphp
+                            <div class="mt-3 flex h-2.5 overflow-hidden rounded-full bg-gray-100">
+                                <div class="bg-emerald-500" style="width: {{ $pctDiterima }}%"></div>
+                                <div class="bg-gray-300" style="width: {{ 100 - $pctDiterima }}%"></div>
+                            </div>
+                            <div class="mt-2 flex justify-between text-xs">
+                                <span class="text-emerald-700"><b class="tabular-nums">{{ $fmtNum($intake['diterima'] ?? 0) }}</b> diterima ({{ $fmtPct($pctDiterima) }})</span>
+                                <span class="text-gray-500"><b class="tabular-nums">{{ $fmtNum($intake['ditolak'] ?? 0) }}</b> ditolak</span>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2 rounded-lg border border-gray-100 p-5">
+                            <h4 class="text-sm font-bold text-gray-900">Alasan Laporan Ditolak</h4>
+                            <p class="text-xs text-gray-500">Laporan duplikat kini dicegah otomatis oleh fitur deteksi duplikat di AQHSE.</p>
+                            <div class="mt-4 space-y-3">
+                                @foreach ($alasan as $nama => $jumlah)
+                                    <div>
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-700">{{ $nama }}</span>
+                                            <span class="font-semibold text-gray-900 tabular-nums">{{ $fmtNum($jumlah) }}</span>
+                                        </div>
+                                        <div class="mt-1 h-2 overflow-hidden rounded-full bg-gray-100">
+                                            <div class="h-full rounded-full {{ $loop->first ? 'bg-amber-400' : 'bg-gray-400' }}" style="width: {{ round($jumlah / $alasanMax * 100) }}%"></div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @endif
 
                 <!-- KPI -->
                 <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -336,6 +410,95 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Pencapaian target temuan per divisi -->
+                @if (! empty($hazard['divisions']))
+                    <div>
+                        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-3">
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-900">Pencapaian Target Temuan per Divisi</h4>
+                                <p class="text-xs text-gray-500">Jumlah temuan yang dilaporkan tiap divisi per bulan dibanding targetnya.</p>
+                            </div>
+                            <div class="flex items-center gap-3 text-xs text-gray-600">
+                                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-emerald-100 ring-1 ring-emerald-300"></span>Mencapai target</span>
+                                <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-red-100 ring-1 ring-red-300"></span>Di bawah target</span>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto rounded-lg border border-gray-100">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <tr>
+                                        <th class="sticky left-0 z-10 bg-gray-50 px-4 py-3 text-left">Divisi</th>
+                                        <th class="px-3 py-3 text-right">Target</th>
+                                        @foreach ($bulanSingkat as $b)
+                                            <th class="px-2 py-3 text-center">{{ $b }}</th>
+                                        @endforeach
+                                        <th class="px-4 py-3 text-right">Tercapai</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach ($hazard['divisions'] as $div)
+                                        @php
+                                            $hasTarget = $div['target'] !== null && $div['target'] > 0;
+                                            $met = 0; $aktif = 0;
+                                        @endphp
+                                        <tr class="{{ $div['is_total'] ? 'bg-gray-50 font-bold text-gray-900' : 'hover:bg-gray-50' }}">
+                                            <td class="sticky left-0 z-10 whitespace-nowrap px-4 py-2 {{ $div['is_total'] ? 'bg-gray-50' : 'bg-white' }} {{ $div['is_total'] ? '' : 'font-medium text-gray-800' }}">{{ $div['nama'] }}</td>
+                                            <td class="px-3 py-2 text-right tabular-nums text-gray-600">{{ $div['target'] ?? '–' }}</td>
+                                            @foreach ($div['bulan'] as $i => $nilai)
+                                                @php
+                                                    $isActive = $bulanAktif[$i] ?? false;
+                                                    $cls = 'text-gray-400';
+                                                    if ($isActive && $hasTarget && $nilai !== null && ! $div['is_total']) {
+                                                        $aktif++;
+                                                        if ($nilai >= $div['target']) { $met++; $cls = 'bg-emerald-50 text-emerald-800'; }
+                                                        else { $cls = 'bg-red-50 text-red-700'; }
+                                                    } elseif ($isActive) {
+                                                        $cls = 'text-gray-700';
+                                                    }
+                                                @endphp
+                                                <td class="px-2 py-2 text-center tabular-nums {{ $cls }}">{{ $isActive ? ($nilai ?? '–') : '' }}</td>
+                                            @endforeach
+                                            <td class="px-4 py-2 text-right tabular-nums whitespace-nowrap">
+                                                @if ($aktif > 0)
+                                                    <span class="font-semibold {{ $met / $aktif >= 0.8 ? 'text-emerald-700' : ($met / $aktif >= 0.5 ? 'text-amber-700' : 'text-red-600') }}">{{ $met }}/{{ $aktif }}</span>
+                                                    <span class="text-xs text-gray-400">bulan</span>
+                                                @else
+                                                    <span class="text-gray-400">–</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Jadwal follow up PIC -->
+                @if (! empty($hazard['schedule']))
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-900 mb-3">Jadwal Follow Up PIC Temuan</h4>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            @foreach ($hazard['schedule'] as $w)
+                                @php $mingguIni = 'W' . min((int) ceil(now()->day / 7), 4) === $w['minggu']; @endphp
+                                <div class="rounded-lg border p-4 {{ $mingguIni ? 'border-indigo-300 bg-indigo-50' : 'border-gray-100' }}">
+                                    <p class="text-xs font-semibold uppercase tracking-wider {{ $mingguIni ? 'text-indigo-700' : 'text-gray-500' }}">
+                                        Minggu {{ substr($w['minggu'], 1) }}{{ $mingguIni ? ' · minggu ini' : '' }}
+                                    </p>
+                                    <p class="mt-1 text-sm font-semibold text-gray-900">{{ $w['pic'] }}</p>
+                                </div>
+                            @endforeach
+                        </div>
+                        @if (! empty($hazard['notes']))
+                            <div class="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500">
+                                @foreach ($hazard['notes'] as $n)
+                                    <span><b class="text-gray-700">{{ $n['siapa'] }}</b>: {{ $n['kapan'] }}</span>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @endif
 
             </div>
 

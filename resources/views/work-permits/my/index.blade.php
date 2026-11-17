@@ -94,10 +94,27 @@
                                             <span class="inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold {{ $permit->statusClass() }}">{{ $permit->statusLabel() }}</span>
                                         </td>
                                         <td class="px-5 py-3 text-right whitespace-nowrap">
-                                            <a href="{{ $permit->isEditable() ? route('my-permit.edit', $permit) : route('my-permit.show', $permit) }}"
-                                               class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold {{ $permit->isEditable() ? 'bg-orange-500 text-white hover:bg-orange-600' : 'text-emerald-700 hover:bg-emerald-50' }}">
-                                                {{ $permit->isEditable() ? 'Revisi' : 'Lihat' }}
-                                            </a>
+                                            @if ($permit->status === WorkPermit::STATUS_RETURNED)
+                                                {{-- Dikembalikan atasan / QHSE: wajib direvisi --}}
+                                                <a href="{{ route('my-permit.edit', $permit) }}"
+                                                   class="inline-flex items-center rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-orange-600">
+                                                    Revisi
+                                                </a>
+                                            @else
+                                                <div class="inline-flex items-center gap-1">
+                                                    @if ($permit->isEditable())
+                                                        {{-- Belum diperiksa atasan: masih boleh diubah --}}
+                                                        <a href="{{ route('my-permit.edit', $permit) }}"
+                                                           class="inline-flex items-center rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                                            Edit
+                                                        </a>
+                                                    @endif
+                                                    <a href="{{ route('my-permit.show', $permit) }}"
+                                                       class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">
+                                                        Lihat
+                                                    </a>
+                                                </div>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach

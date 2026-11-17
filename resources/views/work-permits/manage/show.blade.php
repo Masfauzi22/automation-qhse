@@ -66,6 +66,13 @@
 
                         @if ($step)
                         @if ($canAct)
+                            @if ($takeoverFrom)
+                                {{-- Atasan pengganti: pemeriksa yang dipilih pengaju adalah orang lain --}}
+                                <section class="rounded-xl border border-sky-200 bg-sky-50 px-5 py-4 text-sm text-sky-900">
+                                    Pengaju memilih <b>{{ $takeoverFrom }}</b> sebagai pemeriksa.
+                                    Sebagai atasannya, kamu bisa mengambil alih kalau dia berhalangan. Tanda tangan akan tercatat atas namamu.
+                                </section>
+                            @endif
                             <section class="bg-white rounded-xl border-2 border-emerald-200 shadow-sm"
                                      x-data="{ tab: '{{ $errors->has('return_note') ? 'return' : 'approve' }}', busy: false }">
                                 <div class="border-b border-gray-100 px-5 pt-4">

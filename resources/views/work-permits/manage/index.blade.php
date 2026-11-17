@@ -3,6 +3,7 @@
     $tabs = [
         'todo'   => 'Perlu Tindakan Saya',
         'active' => 'Aktif / Dihentikan',
+        'closed' => 'Closed',
         'all'    => 'Semua',
     ];
 @endphp
@@ -19,7 +20,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
             <!-- Ringkasan -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 <a href="{{ route('permit.index', ['tab' => 'todo']) }}" class="rounded-xl border border-amber-100 bg-amber-50 p-4 shadow-sm transition hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-amber-700">Perlu Tindakan</p>
                     <p class="mt-1 text-3xl font-bold text-amber-800">{{ $counts['todo'] }}</p>
@@ -35,7 +36,12 @@
                     <p class="mt-1 text-3xl font-bold text-red-700">{{ $counts['stopped'] }}</p>
                     <p class="text-xs text-red-700">stop work</p>
                 </a>
-                <a href="{{ route('permit.index', ['tab' => 'all']) }}" class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md">
+                <a href="{{ route('permit.index', ['tab' => 'closed']) }}" class="rounded-xl border border-sky-100 bg-sky-50 p-4 shadow-sm transition hover:shadow-md">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-sky-700">Closed</p>
+                    <p class="mt-1 text-3xl font-bold text-sky-800">{{ $counts['closed'] }}</p>
+                    <p class="text-xs text-sky-700">{{ $counts['closed_month'] }} ditutup bulan ini</p>
+                </a>
+                <a href="{{ route('permit.index', ['tab' => 'all']) }}" class="col-span-2 lg:col-span-1 rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md">
                     <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Total Permit</p>
                     <p class="mt-1 text-3xl font-bold text-gray-900">{{ $counts['all'] }}</p>
                     <p class="text-xs text-gray-500">semua status</p>
@@ -65,7 +71,7 @@
 
                 @if ($permits->isEmpty())
                     <div class="px-6 py-16 text-center">
-                        <h4 class="text-sm font-semibold text-gray-900">{{ $tab === 'todo' ? 'Tidak ada permit yang menunggu tindakanmu' : 'Belum ada permit' }}</h4>
+                        <h4 class="text-sm font-semibold text-gray-900">{{ $tab === 'todo' ? 'Tidak ada permit yang menunggu tindakanmu' : ($tab === 'closed' ? 'Belum ada permit yang ditutup' : 'Belum ada permit') }}</h4>
                         <p class="mt-1 text-sm text-gray-500">Coba ganti tab atau kata pencarian.</p>
                     </div>
                 @else
@@ -75,7 +81,7 @@
                                 <tr>
                                     <th class="px-5 py-3 text-left">No. Permit</th>
                                     <th class="px-5 py-3 text-left">Pekerjaan</th>
-                                    <th class="px-5 py-3 text-left">Pengaju</th>
+                                    <th class="px-5 py-3 text-left">Dibuat oleh</th>
                                     <th class="px-5 py-3 text-left">Berlaku</th>
                                     <th class="px-5 py-3 text-left">Status</th>
                                     <th class="px-5 py-3"></th>

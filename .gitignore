@@ -31,3 +31,7 @@ Thumbs.db
 !.env.example
 *.crt
 *.pem
+
+# Semua variasi .env (berisi rahasia), kecuali contoh
+.env.*
+!.env.example

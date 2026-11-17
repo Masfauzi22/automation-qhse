@@ -1,5 +1,8 @@
 @php
     $isEdit   = $permit->exists;
+    $isReturned = $permit->status === \App\Models\WorkPermit::STATUS_RETURNED;
+    $submitLabel = ! $isEdit ? 'Ajukan Permit' : ($isReturned ? 'Ajukan Ulang' : 'Simpan Perubahan');
+    $checkerOld  = (string) old('checker_id', $permit->checker_id);
     $input    = 'block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500';
     $label    = 'block text-sm font-semibold text-gray-700 mb-1.5';
     $hint     = 'mt-1 text-xs text-gray-500';
@@ -43,7 +46,7 @@
                 </svg>
             </span>
             <div>
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $isEdit ? 'Revisi Permit ' . $permit->permit_number : 'Ajukan Permit ' . $config['label'] }}</h2>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $isEdit ? ($isReturned ? 'Revisi Permit ' : 'Edit Permit ') . $permit->permit_number : 'Ajukan Permit ' . $config['label'] }}</h2>
                 <p class="text-xs text-gray-500">{{ $config['title'] }} · {{ $config['form_number'] }} Rev. {{ $config['form_rev'] }}</p>
             </div>
         </div>
@@ -52,7 +55,7 @@
     <div class="py-8">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
 
-            @if ($isEdit && $permit->last_note)
+            @if ($isEdit && $isReturned && $permit->last_note)
                 <div class="mb-6 rounded-lg border-l-4 border-orange-500 bg-orange-50 p-4">
                     <p class="text-sm font-semibold text-orange-800">Catatan dari pemeriksa:</p>
                     <p class="mt-1 text-sm text-orange-800 whitespace-pre-line">{{ $permit->last_note }}</p>
@@ -126,10 +129,26 @@
                                 :lat="old('latitude', $permit->latitude)" :lng="old('longitude', $permit->longitude)" />
                         </div>
 
+                        {{-- Pemeriksa dipilih dari data user: atasan di departemen pengaju --}}
                         <div>
-                            <label class="{{ $label }}">Nama Atasan <span class="text-red-500">*</span></label>
-                            <input type="text" name="supervisor_name" required maxlength="150" class="{{ $input }}"
-                                   value="{{ old('supervisor_name', $permit->supervisor_name) }}" placeholder="Contoh: Hendra Gunawan">
+                            <label for="checker_id" class="{{ $label }}">Diperiksa oleh <span class="text-red-500">*</span></label>
+                            @if ($checkers->isEmpty())
+                                <p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                                    Belum ada akun Supervisor / Section Head di departemen {{ $user->department?->name }}. Minta admin mengatur jabatan di Data User.
+                                </p>
+                            @else
+                                <select id="checker_id" name="checker_id" required class="{{ $input }}">
+                                    <option value="">-- Pilih atasan --</option>
+                                    @foreach ($checkers->groupBy(fn ($u) => $u->positionLabel()) as $positionLabel => $group)
+                                        <optgroup label="{{ $positionLabel }}">
+                                            @foreach ($group as $c)
+                                                <option value="{{ $c->id }}" @selected($checkerOld === (string) $c->id)>{{ $c->name }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                </select>
+                            @endif
+                            @error('checker_id') <p class="{{ $errorCls }}">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
@@ -393,7 +412,7 @@
                        class="inline-flex justify-center rounded-lg px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100">Batal</a>
                     <button type="submit" :disabled="submitting"
                             class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60">
-                        <span x-text="submitting ? 'Mengirim...' : '{{ $isEdit ? 'Ajukan Ulang' : 'Ajukan Permit' }}'">{{ $isEdit ? 'Ajukan Ulang' : 'Ajukan Permit' }}</span>
+                        <span x-text="submitting ? 'Mengirim...' : @js($submitLabel)">{{ $submitLabel }}</span>
                     </button>
                 </div>
             </form>

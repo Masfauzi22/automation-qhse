@@ -60,7 +60,7 @@ class WorkPermitController extends Controller
     {
         $user = $request->user();
         $tab  = $request->query('tab', 'todo');
-        if (! in_array($tab, ['todo', 'active', 'all'], true)) {
+        if (! in_array($tab, ['todo', 'active', 'closed', 'all'], true)) {
             $tab = 'todo';
         }
         $search = trim((string) $request->query('q', ''));
@@ -71,12 +71,13 @@ class WorkPermitController extends Controller
             ->with(['applicantDepartment', 'ownerDepartment'])
             ->when($tab === 'todo', fn ($q) => $this->scopeMyTurn($q, $user))
             ->when($tab === 'active', fn ($q) => $q->whereIn('status', [WorkPermit::STATUS_ACTIVE, WorkPermit::STATUS_STOPPED]))
+            ->when($tab === 'closed', fn ($q) => $q->where('status', WorkPermit::STATUS_CLOSED))
             ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w
                 ->where('permit_number', 'like', "%{$search}%")
                 ->orWhere('project_name', 'like', "%{$search}%")
                 ->orWhere('location', 'like', "%{$search}%")
                 ->orWhere('applicant_name', 'like', "%{$search}%")))
-            ->orderBy($tab === 'todo' ? 'updated_at' : 'start_date', $tab === 'todo' ? 'asc' : 'desc')
+            ->orderBy(match ($tab) { 'todo' => 'updated_at', 'closed' => 'closed_at', default => 'start_date' }, $tab === 'todo' ? 'asc' : 'desc')
             ->paginate(15)
             ->withQueryString();
 
@@ -90,6 +91,9 @@ class WorkPermitController extends Controller
                 'stopped'      => $base()->where('status', WorkPermit::STATUS_STOPPED)->count(),
                 'active_today' => $base()->where('status', WorkPermit::STATUS_ACTIVE)
                                     ->whereDate('start_date', '<=', today())->whereDate('end_date', '>=', today())->count(),
+                'closed'       => $base()->where('status', WorkPermit::STATUS_CLOSED)->count(),
+                'closed_month' => $base()->where('status', WorkPermit::STATUS_CLOSED)
+                                    ->whereBetween('closed_at', [now()->startOfMonth(), now()->endOfMonth()])->count(),
                 'all'          => $base()->count(),
             ],
             'isHse'     => $this->isHse($user),
@@ -102,20 +106,24 @@ class WorkPermitController extends Controller
         $user = $request->user();
         abort_unless($this->canView($user, $workPermit), 403, 'Permit ini bukan dari departemen Anda.');
 
-        $workPermit->load(['applicantDepartment', 'ownerDepartment', 'checks', 'gasTests', 'dailyLogs.photos', 'files', 'logs', 'jsaFile', 'certificate']);
+        $workPermit->load(['applicantDepartment', 'ownerDepartment', 'checks', 'gasTests', 'dailyLogs.photos', 'files', 'logs', 'jsaFile', 'certificate', 'checker']);
 
         $step = self::STEPS[$workPermit->status] ?? null;
+        $canAct = $step && $this->canAct($user, $workPermit, $step['who']);
 
         return view('work-permits.manage.show', [
             'permit'        => $workPermit,
             'step'          => $step,
             'canStop'       => $this->canStop($user, $workPermit),
             'canResume'     => $this->isHse($user) && $workPermit->status === WorkPermit::STATUS_STOPPED,
-            'canAct'        => $step && $this->canAct($user, $workPermit, $step['who']),
+            'canAct'        => $canAct,
+            // Atasan pengganti yang memproses permit milik pemeriksa lain
+            'takeoverFrom'  => $canAct && $step['who'] === 'superior' && $workPermit->isTakeoverBy($user)
+                                ? $workPermit->supervisor_name : null,
             'confirmations' => $step ? $this->confirmationsFor($workPermit, $step['action']) : [],
             'checkerHint'   => $this->checkerHint($workPermit),
             // Peringatan kalau departemen pengaju belum punya atasan yang bisa memeriksa
-            'noSuperior'    => $step && $step['who'] === 'superior' && $this->superiorsFor($workPermit)->isEmpty(),
+            'noSuperior'    => $step && $step['who'] === 'superior' && ! $workPermit->checker && $this->superiorsFor($workPermit)->isEmpty(),
         ]);
     }
 
@@ -348,9 +356,30 @@ class WorkPermitController extends Controller
             return $query;
         }
 
+        // Permit yang pemeriksanya: saya, bawahan saya (bisa saya ambil alih), atau belum dipilih (permit lama)
+        $lowerIds = $this->lowerCheckerIds($user);
+
         return $query
             ->where('applicant_department_id', $user->department_id ?? 0)
-            ->whereIn('applicant_position', $user->checkablePositions() ?: ['-']);
+            ->whereIn('applicant_position', $user->checkablePositions() ?: ['-'])
+            ->where(fn ($q) => $q->whereNull('checker_id')
+                ->orWhere('checker_id', $user->id)
+                ->when($lowerIds, fn ($w) => $w->orWhereIn('checker_id', $lowerIds)));
+    }
+
+    // ID pemeriksa di departemen yang sama dengan jabatan di bawah user ini (mis. Supervisor untuk Section Head)
+    private function lowerCheckerIds(User $user): array
+    {
+        $myRank = User::positionRank($user->position);
+        $lower = collect(User::POSITIONS)
+            ->filter(fn ($p) => $p['rank'] >= User::PERMIT_CHECKER_MIN_RANK && $p['rank'] < $myRank)
+            ->keys()->all();
+
+        if (! $lower || ! $user->department_id) {
+            return [];
+        }
+
+        return User::where('department_id', $user->department_id)->whereIn('position', $lower)->pluck('id')->all();
     }
 
     // Permit yang sedang menunggu tindakan user ini
@@ -368,7 +397,9 @@ class WorkPermitController extends Controller
                     ->whereIn('status', [WorkPermit::STATUS_PENDING_CHECK, WorkPermit::STATUS_PENDING_CLOSE_CHECK])
                     ->where('applicant_department_id', $user->department_id)
                     ->whereIn('applicant_position', $positions)
-                    ->where('applicant_id', '!=', $user->id));
+                    ->where('applicant_id', '!=', $user->id)
+                    // Hanya yang memilih saya sebagai pemeriksa (permit lama tanpa pilihan: semua atasan)
+                    ->where(fn ($c) => $c->whereNull('checker_id')->orWhere('checker_id', $user->id)));
             }
             // Sebagai QHSE
             if ($user->hasRole('qhse')) {
@@ -383,8 +414,7 @@ class WorkPermitController extends Controller
 
     private function canView(User $user, WorkPermit $permit): bool
     {
-        return $this->isHse($user)
-            || $user->canCheckPermitFrom($permit->applicant_position, $permit->applicant_department_id);
+        return $this->isHse($user) || $permit->canBeCheckedBy($user);
     }
 
     private function canAct(User $user, WorkPermit $permit, string $who): bool
@@ -395,8 +425,7 @@ class WorkPermitController extends Controller
 
         return match ($who) {
             'qhse'     => $user->hasRole('qhse'),
-            'superior' => (int) $permit->applicant_id !== (int) $user->id
-                          && $user->canCheckPermitFrom($permit->applicant_position, $permit->applicant_department_id),
+            'superior' => $permit->canBeCheckedBy($user),
             default    => false,
         };
     }
@@ -414,6 +443,10 @@ class WorkPermitController extends Controller
     // Teks "siapa yang memeriksa", mis. "Supervisor atau Section Head MAINTENANCE"
     private function checkerHint(WorkPermit $permit): string
     {
+        if ($permit->checker_id && $permit->supervisor_name) {
+            return $permit->supervisor_name . ($permit->checker ? ' (' . trim($permit->checker->positionLabel() . ' ' . ($permit->checker->department?->name ?? '')) . ')' : '');
+        }
+
         $rank = User::positionRank($permit->applicant_position);
         $labels = collect(User::POSITIONS)
             ->filter(fn ($p) => $p['rank'] > $rank && $p['rank'] >= User::PERMIT_CHECKER_MIN_RANK)
