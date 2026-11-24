@@ -14,5 +14,11 @@
         "service": "app"
       }
     }
+  ],
+  "crons": [
+    {
+      "path": "/cron/hazard-reminders",
+      "schedule": "0 0 * * *"
+    }
   ]
 }
